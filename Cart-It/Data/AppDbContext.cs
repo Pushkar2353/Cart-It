@@ -1,4 +1,5 @@
 ﻿using Cart_It.Models;
+using Cart_It.Models.JWT;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Reflection.Emit;
@@ -22,6 +23,7 @@ namespace Cart_It.Data
         public virtual DbSet<Order> Orders { get; set; } = null!;
         public virtual DbSet<Payment> Payments { get; set; } = null!;
         public virtual DbSet<Review> Reviews { get; set; } = null!;
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
