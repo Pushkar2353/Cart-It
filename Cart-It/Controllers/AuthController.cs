@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.ComponentModel.DataAnnotations;
+using System.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -39,29 +40,39 @@ namespace Cart_It.Controllers
             {
                 _logger.LogInformation("Login attempt for email: {Email}", request.Email);
 
+                // Initialize a list to hold roles for the authenticated user
+                var roles = new List<string>();
+
                 // Verify credentials in Admin table
                 var admin = _context.Administrator.SingleOrDefault(a => a.Email == request.Email && a.Password == request.Password);
                 if (admin != null)
                 {
-                    return GenerateToken(admin.Email, "Admin");
+                    roles.Add("Administrator");
                 }
 
                 // Verify credentials in Customer table
                 var customer = _context.Customers.SingleOrDefault(c => c.Email == request.Email && c.Password == request.Password);
                 if (customer != null)
                 {
-                    return GenerateToken(customer.Email, "Customer");
+                    roles.Add("Customer");
                 }
 
                 // Verify credentials in Seller table
                 var seller = _context.Sellers.SingleOrDefault(s => s.Email == request.Email && s.Password == request.Password);
                 if (seller != null)
                 {
-                    return GenerateToken(seller.Email, "Seller");
+                    roles.Add("Seller");
                 }
 
-                _logger.LogWarning("Invalid login attempt for email: {Email}", request.Email);
-                return Unauthorized(new { Message = "Invalid email or password." });
+                // If no roles found, return unauthorized
+                if (!roles.Any())
+                {
+                    _logger.LogWarning("Invalid login attempt for email: {Email}", request.Email);
+                    return Unauthorized(new { Message = "Invalid email or password." });
+                }
+
+                // Generate token with all assigned roles
+                return GenerateToken(request.Email, roles);
             }
             catch (Exception ex)
             {
@@ -69,6 +80,7 @@ namespace Cart_It.Controllers
                 return StatusCode(500, new { Message = "An error occurred during login. Please try again later." });
             }
         }
+
 
         [HttpPost("refresh-token")]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
@@ -139,7 +151,7 @@ namespace Cart_It.Controllers
         }
 
         // Generate JWT Token
-        private IActionResult GenerateToken(string email, string role)
+        private IActionResult GenerateToken(string email, List<string> roles)
         {
             var secretKey = _configuration["Jwt:Key"];
             if (string.IsNullOrEmpty(secretKey))
@@ -151,13 +163,20 @@ namespace Cart_It.Controllers
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            var claims = new[]
-            {
-                new Claim(JwtRegisteredClaimNames.Sub, email),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim("Role", role)
-            };
+            // Add claims for the token
+            var claims = new List<Claim>
+    {
+        new Claim(JwtRegisteredClaimNames.Sub, email),
+        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+    };
 
+            // Add roles as individual claims
+            foreach (var role in roles)
+            {
+                claims.Add(new Claim("roles", role)); // Use "roles" to align with RoleClaimType in token validation
+            }
+
+            // Generate token
             var token = new JwtSecurityToken(
                 issuer: _configuration["Jwt:Issuer"],
                 audience: _configuration["Jwt:Audience"],
@@ -167,14 +186,15 @@ namespace Cart_It.Controllers
             );
 
             var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
-            _logger.LogInformation("Token generated successfully for email: {Email}, Role: {Role}", email, role);
+            _logger.LogInformation("Token generated successfully for email: {Email}, Roles: {Roles}", email, string.Join(", ", roles));
 
             return Ok(new
             {
                 Token = tokenString,
-                Role = role
+                Roles = roles
             });
         }
+
 
         // Method to retrieve and verify user based on email (simulating your existing pattern for Admin, Customer, Seller)
         private object GetUserByEmail(string email)

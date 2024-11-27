@@ -11,6 +11,7 @@ namespace Cart_It.Repository
         Task<Product> AddProductAsync(Product product);
         Task<Product> UpdateProductAsync(Product product);
         Task DeleteProductAsync(int productId);
+        Task<IEnumerable<Product>> GetProductsByCategoryIdAsync(int categoryId);
     }
 
     public class ProductRepository : IProductRepository
@@ -61,6 +62,11 @@ namespace Cart_It.Repository
                 await _context.SaveChangesAsync();
             }
         }
+        public async Task<IEnumerable<Product>> GetProductsByCategoryIdAsync(int categoryId)
+    {
+        return await _context.Products
+            .Where(p => p.CategoryId == categoryId)
+            .ToListAsync();
     }
-
+  }
 }

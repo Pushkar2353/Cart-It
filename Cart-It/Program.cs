@@ -104,9 +104,15 @@ namespace Cart_It
             ValidateIssuerSigningKey = true,
             ValidIssuer = issuer,
             ValidAudience = audience,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
+            RoleClaimType = ClaimTypes.Role // Ensure the JWT token role claim is recognized correctly
         };
     });
+
+            builder.Services.AddAuthorization(options =>
+            {
+                options.AddUserRoles();
+            });
 
 
 
@@ -155,6 +161,11 @@ namespace Cart_It
                 });
             });
 
+            // Add services to the container.
+            builder.Services.AddControllersWithViews();
+            builder.Services.AddAuthentication(); // Add authentication services
+            builder.Services.AddAuthorization();  // Add authorization services
+
 
             var app = builder.Build();
 
@@ -163,15 +174,17 @@ namespace Cart_It
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
+                app.UseExceptionHandler("/Home/Error");
+                app.UseHsts();
             }
 
             app.UseHttpsRedirection();
 
-            app.UseAuthentication();
+            app.UseStaticFiles();
 
-            app.UseAuthorization();
             app.UseRouting();
-
+            app.UseAuthentication(); // Authentication middleware must come first
+            app.UseAuthorization();  // Authorization middleware must come after authentication
             app.MapControllers();
 
             app.Run();

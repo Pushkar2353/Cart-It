@@ -14,6 +14,7 @@ namespace Cart_It.Services
         Task<ProductDTO> AddProductAsync(ProductDTO productDto);
         Task<ProductDTO> UpdateProductAsync(int productId, ProductDTO productDto);
         Task DeleteProductAsync(int productId);
+        Task<IEnumerable<ProductDTO>> GetProductsByCategoryIdAsync(int categoryId);
     }
 
     public class ProductService : IProductService
@@ -85,6 +86,12 @@ namespace Cart_It.Services
         public async Task DeleteProductAsync(int productId)
         {
             await _productRepository.DeleteProductAsync(productId);
+        }
+
+        public async Task<IEnumerable<ProductDTO>> GetProductsByCategoryIdAsync(int categoryId)
+        {
+            var products = await _productRepository.GetProductsByCategoryIdAsync(categoryId);
+            return _mapper.Map<IEnumerable<ProductDTO>>(products);
         }
     }
 

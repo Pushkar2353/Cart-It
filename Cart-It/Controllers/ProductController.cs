@@ -10,26 +10,56 @@ namespace Cart_It.Controllers
     public class ProductController : ControllerBase
     {
         private readonly IProductService _productService;
+        private readonly ILogger<ProductController> _logger;
 
-        public ProductController(IProductService productService)
+        public ProductController(IProductService productService, ILogger<ProductController> logger)
         {
             _productService = productService;
+            _logger = logger;
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAllProducts()
         {
-            var products = await _productService.GetAllProductsAsync();
-            return Ok(products);
+            try
+            {
+                _logger.LogInformation("Fetching all products.");
+
+                var products = await _productService.GetAllProductsAsync();
+
+                _logger.LogInformation("Successfully fetched {Count} products.", products.Count());
+                return Ok(products);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while fetching all products.");
+                return StatusCode(500, new { message = ex.Message });
+            }
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetProductById(int id)
         {
-            var product = await _productService.GetProductByIdAsync(id);
-            if (product == null)
-                return NotFound();
-            return Ok(product);
+            try
+            {
+                _logger.LogInformation("Fetching product with ID {ProductId}.", id);
+
+                var product = await _productService.GetProductByIdAsync(id);
+
+                if (product == null)
+                {
+                    _logger.LogWarning("Product with ID {ProductId} not found.", id);
+                    return NotFound(new { message = "Product not found" });
+                }
+
+                _logger.LogInformation("Successfully fetched product with ID {ProductId}.", id);
+                return Ok(product);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while fetching product with ID {ProductId}.", id);
+                return StatusCode(500, new { message = ex.Message });
+            }
         }
 
         [HttpPost]
@@ -37,15 +67,22 @@ namespace Cart_It.Controllers
         {
             try
             {
-                // Call the service method to add the product
+                if (productDto == null)
+                {
+                    _logger.LogWarning("Received null data for product creation.");
+                    return BadRequest(new { message = "Invalid product data." });
+                }
+
+                _logger.LogInformation("Adding a new product with name {ProductName}.", productDto.ProductName);
+
                 var addedProduct = await _productService.AddProductAsync(productDto);
 
-                // Return success response
+                _logger.LogInformation("Product with ID {ProductId} created successfully.", addedProduct.ProductId);
                 return CreatedAtAction(nameof(GetProductById), new { id = addedProduct.ProductId }, addedProduct);
             }
             catch (Exception ex)
             {
-                // Handle validation or database errors
+                _logger.LogError(ex, "Error occurred while adding a new product.");
                 return BadRequest(new { message = ex.Message });
             }
         }
@@ -53,26 +90,80 @@ namespace Cart_It.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateProduct(int id, [FromBody] ProductDTO productDto)
         {
-            if (productDto == null)
-                return BadRequest();
-
             try
             {
+                if (productDto == null)
+                {
+                    _logger.LogWarning("Received null data for updating product with ID {ProductId}.", id);
+                    return BadRequest(new { message = "Invalid product data." });
+                }
+
+                _logger.LogInformation("Updating product with ID {ProductId}.", id);
+
                 var updatedProduct = await _productService.UpdateProductAsync(id, productDto);
+
+                _logger.LogInformation("Product with ID {ProductId} updated successfully.", id);
                 return Ok(updatedProduct);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning("Product with ID {ProductId} not found for update.", id);
+                return NotFound(new { message = ex.Message });
             }
             catch (Exception ex)
             {
-                return NotFound(ex.Message);
+                _logger.LogError(ex, "Error occurred while updating product with ID {ProductId}.", id);
+                return StatusCode(500, new { message = ex.Message });
             }
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProduct(int id)
         {
-            await _productService.DeleteProductAsync(id);
-            return NoContent();
+            try
+            {
+                _logger.LogInformation("Attempting to delete product with ID {ProductId}.", id);
+
+                await _productService.DeleteProductAsync(id);
+
+                _logger.LogInformation("Product with ID {ProductId} deleted successfully.", id);
+                return NoContent();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning("Product with ID {ProductId} not found for deletion.", id);
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while deleting product with ID {ProductId}.", id);
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("category/{categoryId}")]
+        public async Task<IActionResult> GetProductsByCategoryId(int categoryId)
+        {
+            _logger.LogInformation($"Received request to get products for category ID: {categoryId}");
+
+            try
+            {
+                var products = await _productService.GetProductsByCategoryIdAsync(categoryId);
+
+                if (products == null || !products.Any())
+                {
+                    _logger.LogWarning($"No products found for category ID: {categoryId}");
+                    return NotFound("No products found for the given category.");
+                }
+
+                _logger.LogInformation($"Successfully retrieved {products.Count()} products for category ID: {categoryId}");
+                return Ok(products);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"An error occurred while fetching products for category ID: {categoryId}. Error: {ex.Message}");
+                return StatusCode(500, "An error occurred while processing your request.");
+            }
         }
     }
-
 }
