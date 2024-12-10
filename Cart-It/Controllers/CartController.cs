@@ -76,11 +76,18 @@ namespace Cart_It.Controllers
                     return BadRequest(new { message = "Product does not exist." });
                 }
 
+                // Fetch product to get the ProductPrice
+                var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductId == cartDto.ProductId);
+                if (product != null)
+                {
+                    cartDto.Amount = product.ProductPrice;  // Set Amount to the ProductPrice
+                }
+
                 _logger.LogInformation("Adding cart for customer ID {CustomerId} and product ID {ProductId}.", cartDto.CustomerId, cartDto.ProductId);
-                await _cartService.AddCartAsync(cartDto);
+                var cart = await _cartService.AddCartAsync(cartDto);
 
                 _logger.LogInformation("Successfully added cart with ID {CartId}.", cartDto.CartId);
-                return CreatedAtAction(nameof(GetCartById), new { id = cartDto.CartId }, cartDto);
+                return CreatedAtAction(nameof(GetCartById),new { cartId = cartDto.CartId },cart);
             }
             catch (Exception ex)
             {
@@ -100,11 +107,18 @@ namespace Cart_It.Controllers
 
             try
             {
-                _logger.LogInformation("Updating cart with ID {CartId}.", id);
+                // Fetch product to get the ProductPrice
+                var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductId == cartDto.ProductId);
+                if (product != null)
+                {
+                    cartDto.Amount = product.ProductPrice;  // Set Amount to the ProductPrice
+                }
+
+                // Proceed with updating the cart
                 await _cartService.UpdateCartAsync(id, cartDto);
 
-                _logger.LogInformation("Successfully updated cart with ID {CartId}.", id);
-                return NoContent();
+                // Return NoContentResult (204 No Content) after successful update
+                return NoContent(); // This ensures a 204 status code
             }
             catch (Exception ex)
             {
@@ -112,6 +126,7 @@ namespace Cart_It.Controllers
                 return StatusCode(500, new { message = "An error occurred while updating the cart." });
             }
         }
+
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCart(int id)

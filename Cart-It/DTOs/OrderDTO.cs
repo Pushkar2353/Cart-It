@@ -14,11 +14,11 @@ namespace Cart_It.DTOs
 
         [Required(ErrorMessage = "Unit Price is required")]
         [DataType(DataType.Currency)]
-        public decimal? UnitPrice { get; set; }
+        public decimal UnitPrice { get; set; }
 
         [Required(ErrorMessage = "Total Amount is required")]
         [DataType(DataType.Currency)]
-        public decimal? TotalAmount { get; set; }
+        public decimal? TotalAmount => UnitPrice * ItemQuantity;
 
         [Required(ErrorMessage = "Address is required.")]
         [StringLength(5000, ErrorMessage = "Address Line 1 name must not exceed 5000 characters.")]

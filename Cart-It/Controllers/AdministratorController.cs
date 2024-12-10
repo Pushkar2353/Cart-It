@@ -14,6 +14,8 @@ namespace Cart_It.Controllers
     public class AdministratorController : ControllerBase
     {
         private readonly IAdministratorService _administratorService;
+        
+        /*
         private readonly ICustomerService _customerService;
         private readonly ISellerService _sellerService;
         private readonly ICategoryService _categoryService;
@@ -23,13 +25,15 @@ namespace Cart_It.Controllers
         private readonly ICartService _cartService;
         private readonly IOrderService _orderService;
         private readonly IReviewService _reviewService;
-        private readonly IMapper _mapper;
+        */
 
+        private readonly IMapper _mapper;
         private readonly ILogger<AdministratorController> _logger;
 
-        public AdministratorController(IAdministratorService administratorService, IReviewService reviewService, IOrderService orderService, IPaymentService paymentService, ICartService cartService, IProductInventoryService inventoryService, IProductService productService, ICategoryService categoryService, ISellerService sellerService, ICustomerService customerService, IMapper mapper, ILogger<AdministratorController> logger)
+        public AdministratorController(IAdministratorService administratorService, IMapper mapper, ILogger<AdministratorController> logger) //IReviewService reviewService, IOrderService orderService, IPaymentService paymentService, ICartService cartService, IProductInventoryService inventoryService, IProductService productService, ICategoryService categoryService, ISellerService sellerService, ICustomerService customerService,
         {
             _administratorService = administratorService;
+            /*
             _customerService = customerService;
             _sellerService = sellerService;
             _categoryService = categoryService;
@@ -39,6 +43,7 @@ namespace Cart_It.Controllers
             _paymentService = paymentService;
             _orderService = orderService;
             _reviewService = reviewService;
+            */
             _logger = logger;
             _mapper = mapper;
         }
@@ -173,6 +178,7 @@ namespace Cart_It.Controllers
             }
         }
 
+        /*
         // GET: api/customer/{id}
         [HttpGet("GetCustomerById/{id}")]
         public async Task<IActionResult> GetCustomerById(int id)
@@ -682,5 +688,6 @@ namespace Cart_It.Controllers
                 return StatusCode(500, new { message = "An error occurred while fetching the reviews." });
             }
         }
+        */
     }
 }

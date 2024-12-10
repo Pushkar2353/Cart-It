@@ -14,20 +14,26 @@ namespace Cart_It.Controllers
     public class SellerController : ControllerBase
     {
         private readonly ISellerService _sellerService;
+        private readonly IMapper _mapper;
+        private readonly ILogger<SellerController> _logger;
+
+        /*
         private readonly ICategoryService _categoryService;
         private readonly IProductService _productService;
         private readonly IProductInventoryService _inventoryService;
         private readonly IReviewService _reviewService;
-        private readonly IMapper _mapper;
-        private readonly ILogger<SellerController> _logger;
 
-        public SellerController(ISellerService sellerService, IReviewService reviewService, IMapper mapper, IProductInventoryService inventoryService, IProductService productService, ICategoryService categoryService, ILogger<SellerController> logger)
+        */
+
+        public SellerController(ISellerService sellerService, IMapper mapper, ILogger<SellerController> logger) //IReviewService reviewService, IProductInventoryService inventoryService, IProductService productService, ICategoryService categoryService,
         {
             _sellerService = sellerService;
+            /*
             _categoryService = categoryService;
             _productService = productService;
             _inventoryService = inventoryService;
             _reviewService = reviewService;
+            */
             _mapper = mapper;
             _logger = logger;
         }
@@ -162,6 +168,8 @@ namespace Cart_It.Controllers
                 return StatusCode(500, new { message = ex.Message });
             }
         }
+
+        /*
 
         [HttpGet("GetCategories")]
         public async Task<IActionResult> GetCategories()
@@ -374,5 +382,6 @@ namespace Cart_It.Controllers
                 return StatusCode(500, new { message = "An error occurred while fetching the reviews." });
             }
         }
+        */
     }
 }

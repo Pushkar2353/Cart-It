@@ -26,18 +26,19 @@ namespace Cart_It.Repository
 
         public async Task<Order> AddOrderAsync(Order order)
         {
-            var productExists = await _context.Products.AnyAsync(p => p.ProductId == order.ProductId);
-            if (!productExists)
-            {
+            // Validate product and customer existence
+            var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductId == order.ProductId);
+            if (product == null)
                 throw new InvalidOperationException("Product not found.");
-            }
 
             var customerExists = await _context.Customers.AnyAsync(c => c.CustomerId == order.CustomerId);
             if (!customerExists)
-            {
                 throw new InvalidOperationException("Customer not found.");
-            }
 
+            // Set UnitPrice to ProductPrice
+            order.UnitPrice = product.ProductPrice;
+
+            // Add and save order
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
             return order;
@@ -47,25 +48,24 @@ namespace Cart_It.Repository
         {
             var order = await _context.Orders.FindAsync(orderId);
             if (order == null)
-            {
                 throw new InvalidOperationException("Order not found.");
-            }
 
-            // Only update the changed fields
+            // Fetch the product and set UnitPrice to ProductPrice
+            var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductId == orderDto.ProductId);
+            if (product == null)
+                throw new InvalidOperationException("Product not found.");
+
+            // Set UnitPrice to ProductPrice
+            order.UnitPrice = product.ProductPrice;
+
+            // Map other fields from orderDto to order
             _mapper.Map(orderDto, order);
 
-            var productExists = await _context.Products.AnyAsync(p => p.ProductId == order.ProductId);
-            if (!productExists)
-            {
-                throw new InvalidOperationException("Product not found.");
-            }
-
-            var customerExists = await _context.Customers.AnyAsync(c => c.CustomerId == order.CustomerId);
+            var customerExists = await _context.Customers.AnyAsync(c => c.CustomerId == orderDto.CustomerId);
             if (!customerExists)
-            {
                 throw new InvalidOperationException("Customer not found.");
-            }
 
+            // Update and save order
             _context.Orders.Update(order);
             await _context.SaveChangesAsync();
             return order;
@@ -73,10 +73,7 @@ namespace Cart_It.Repository
 
         public async Task<Order?> GetOrderByIdAsync(int orderId)
         {
-            return await _context.Orders
-                                 .Include(o => o.Products)
-                                 .Include(o => o.Customers)
-                                 .FirstOrDefaultAsync(o => o.OrderId == orderId);
+            return await _context.Orders.FirstOrDefaultAsync(o => o.OrderId == orderId);
         }
     }
 }

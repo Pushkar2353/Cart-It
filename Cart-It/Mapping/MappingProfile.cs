@@ -4,9 +4,16 @@ using Cart_It.Models;
 
 namespace Cart_It.Mapping
 {
-    public class MappingProfile : Profile
+    public class CustomerProfile : Profile
     {
-        public MappingProfile()
+        public CustomerProfile()
+        {
+            CreateMap<Customer, CustomerDTO>().ReverseMap();
+        }
+    }
+    public class SellerProfile : Profile
+    {
+        public SellerProfile()
         {
             CreateMap<Seller, SellerDTO>().ReverseMap();
         }
@@ -40,7 +47,6 @@ namespace Cart_It.Mapping
     {
         public ProductInventoryProfile() 
         {
-            // Map between ProductInventory and ProductInventoryDto
             CreateMap<ProductInventory, ProductInventoryDTO>().ReverseMap();
         }
     }
@@ -49,7 +55,8 @@ namespace Cart_It.Mapping
     {
         public CartProfile()
         {
-            CreateMap<Cart, CartDTO>().ReverseMap();
+            CreateMap<Cart, CartDTO>().ReverseMap()
+            .ForMember(dest => dest.Amount, opt => opt.Ignore());
         }
     }
 

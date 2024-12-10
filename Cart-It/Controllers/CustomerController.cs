@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace Cart_It.Controllers
 {
@@ -16,29 +17,33 @@ namespace Cart_It.Controllers
 
     public class CustomerController : ControllerBase
     {
+        /*
         private readonly IReviewService _reviewService;
-        private readonly ICustomerService _customerService;
         private readonly ICategoryService _categoryService;
-        private readonly ILogger<CustomerController> _logger;
         private readonly IProductService _productService;
         private readonly ICartService _cartService;
-        private readonly AppDbContext _context;
         private readonly IOrderService _orderService;
-        private readonly IMapper _mapper;
         private readonly IPaymentService _paymentService;
+        */
 
-        public CustomerController(IReviewService reviewService, IPaymentService paymentService, IOrderService orderService, IMapper mapper, AppDbContext context,ICartService cartService,IProductService productService, ICustomerService customerService, ICategoryService categoryService, ILogger<CustomerController> logger)
+        private readonly ICustomerService _customerService;
+        private readonly IMapper _mapper;
+        private readonly ILogger<CustomerController> _logger;
+
+
+
+
+        public CustomerController( IMapper mapper, ICustomerService customerService, ILogger<CustomerController> logger) //IReviewService reviewService, IPaymentService paymentService, IOrderService orderService, ICartService cartService,IProductService productService, ICategoryService categoryService, AppDbContext context,
         {
-            _reviewService = reviewService;
-            _cartService = cartService;
-            _productService = productService;
+            //_reviewService = reviewService;
+            //_cartService = cartService;
+            //_productService = productService;
             _customerService = customerService;
-            _categoryService = categoryService;
+            //_categoryService = categoryService;
             _logger = logger;
-            _context = context;
-            _orderService = orderService;
+            //_orderService = orderService;
             _mapper = mapper;
-            _paymentService = paymentService;
+            //_paymentService = paymentService;
 
         }
 
@@ -87,7 +92,7 @@ namespace Cart_It.Controllers
             }
         }
 
-        [HttpPost("RegisterCustomer")]
+        [HttpPost("CreateCustomer")]
         public async Task<IActionResult> CreateCustomer([FromBody] CustomerDTO customerDto)
         {
             try
@@ -169,6 +174,8 @@ namespace Cart_It.Controllers
             }
         }
 
+        /*
+
         [HttpGet("GetAllCategories")]
         public async Task<IActionResult> GetCategories()
         {
@@ -187,6 +194,7 @@ namespace Cart_It.Controllers
                 return StatusCode(500, new { Message = ex.Message });
             }
         }
+
 
         [HttpGet("category/{categoryId}")]
         public async Task<IActionResult> GetProductsByCategoryId(int categoryId)
@@ -538,5 +546,6 @@ namespace Cart_It.Controllers
                 return StatusCode(500, new { message = "An error occurred while fetching the review." });
             }
         }
+        */
     }
 }

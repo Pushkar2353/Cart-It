@@ -13,9 +13,11 @@ namespace Cart_It.Controllers
         private readonly IPaymentService _paymentService;
         private readonly IMapper _mapper;
         private readonly ILogger<PaymentController> _logger;
+        private readonly IOrderService _orderService;
 
-        public PaymentController(IPaymentService paymentService, IMapper mapper, ILogger<PaymentController> logger)
+        public PaymentController(IPaymentService paymentService, IOrderService orderService, IMapper mapper, ILogger<PaymentController> logger)
         {
+            _orderService = orderService;
             _paymentService = paymentService;
             _mapper = mapper;
             _logger = logger;
@@ -32,19 +34,39 @@ namespace Cart_It.Controllers
 
             try
             {
+                // Validate if Order exists
+                var order = await _orderService.GetOrderByIdAsync(paymentDto.OrderId);
+                if (order == null)
+                {
+                    _logger.LogWarning("AddPayment: Order with ID {OrderId} not found.", paymentDto.OrderId);
+                    return NotFound($"Order with ID {paymentDto.OrderId} does not exist.");
+                }
+
+                // Set AmountToPay directly from TotalAmount of the order
+                paymentDto.AmountToPay = order.TotalAmount;
+
+                // Validate AmountToPay consistency
+                if (paymentDto.AmountToPay != order.TotalAmount)
+                {
+                    _logger.LogWarning("AddPayment: AmountToPay mismatch. Expected {ExpectedAmount}, but received {ReceivedAmount}.", order.TotalAmount, paymentDto.AmountToPay);
+                    return BadRequest($"AmountToPay mismatch. Expected: {order.TotalAmount}");
+                }
+
                 _logger.LogInformation("AddPayment: Adding a new payment.");
                 var payment = await _paymentService.AddPaymentAsync(paymentDto);
                 var paymentResponse = _mapper.Map<PaymentDTO>(payment); // Map entity to DTO for response
 
                 _logger.LogInformation("AddPayment: Successfully added payment with ID {PaymentId}.", payment.PaymentId);
-                return CreatedAtAction(nameof(GetPayment), new { paymentId = payment.PaymentId }, paymentResponse);
+                return CreatedAtAction(nameof(GetPayment), new { paymentId = payment.PaymentId }, payment);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "AddPayment: An error occurred while adding a new payment.");
-                return BadRequest(new { message = "An error occurred while adding the payment." });
+                // Log full exception details to help diagnose the issue
+                _logger.LogError(ex, "AddPayment: An error occurred while adding the payment.");
+                return StatusCode(500, new { message = "An error occurred while adding the payment.", details = ex.ToString() });
             }
         }
+
 
         [HttpPut("{paymentId}")]
         public async Task<IActionResult> UpdatePayment(int paymentId, [FromBody] PaymentDTO paymentDto)
@@ -57,6 +79,24 @@ namespace Cart_It.Controllers
 
             try
             {
+                // Validate if Order exists
+                var order = await _orderService.GetOrderByIdAsync(paymentDto.OrderId);
+                if (order == null)
+                {
+                    _logger.LogWarning("UpdatePayment: Order with ID {OrderId} not found.", paymentDto.OrderId);
+                    return NotFound($"Order with ID {paymentDto.OrderId} does not exist.");
+                }
+
+                // Set AmountToPay directly from TotalAmount of the order
+                paymentDto.AmountToPay = order.TotalAmount;
+
+                // Validate AmountToPay consistency
+                if (paymentDto.AmountToPay != order.TotalAmount)
+                {
+                    _logger.LogWarning("UpdatePayment: AmountToPay mismatch for PaymentId {PaymentId}. Expected {ExpectedAmount}, but received {ReceivedAmount}.", paymentId, order.TotalAmount, paymentDto.AmountToPay);
+                    return BadRequest($"AmountToPay mismatch. Expected: {order.TotalAmount}");
+                }
+
                 _logger.LogInformation("UpdatePayment: Updating payment with ID {PaymentId}.", paymentId);
                 var payment = await _paymentService.UpdatePaymentAsync(paymentId, paymentDto);
                 if (payment == null)
@@ -67,7 +107,7 @@ namespace Cart_It.Controllers
 
                 var paymentResponse = _mapper.Map<PaymentDTO>(payment); // Map entity to DTO for response
                 _logger.LogInformation("UpdatePayment: Successfully updated payment with ID {PaymentId}.", paymentId);
-                return Ok(paymentResponse);
+                return Ok(payment);
             }
             catch (Exception ex)
             {
@@ -91,7 +131,7 @@ namespace Cart_It.Controllers
 
                 var paymentResponse = _mapper.Map<PaymentDTO>(payment); // Map entity to DTO for response
                 _logger.LogInformation("GetPayment: Successfully fetched payment with ID {PaymentId}.", paymentId);
-                return Ok(paymentResponse);
+                return Ok(payment);
             }
             catch (Exception ex)
             {

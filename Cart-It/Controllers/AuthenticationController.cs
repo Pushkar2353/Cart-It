@@ -1,6 +1,7 @@
 ﻿using Cart_It.Data;
 using Cart_It.DTOs;
 using Cart_It.Mapping;
+using Cart_It.Models;
 using Cart_It.Models.JWT;
 using Cart_It.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -19,13 +20,13 @@ namespace Cart_It.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class AuthController : ControllerBase
+    public class AuthenticationController : ControllerBase
     {
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
-        private readonly ILogger<AuthController> _logger;
+        private readonly ILogger<AuthenticationController> _logger;
 
-        public AuthController(AppDbContext context, IConfiguration configuration, ILogger<AuthController> logger)
+        public AuthenticationController(AppDbContext context, IConfiguration configuration, ILogger<AuthenticationController> logger)
         {
             _context = context;
             _configuration = configuration;
@@ -42,12 +43,16 @@ namespace Cart_It.Controllers
 
                 // Initialize a list to hold roles for the authenticated user
                 var roles = new List<string>();
+                int? sellerId = null;
+                int? customerId = null;
+                int? adminId = null;
 
                 // Verify credentials in Admin table
                 var admin = _context.Administrator.SingleOrDefault(a => a.Email == request.Email && a.Password == request.Password);
                 if (admin != null)
                 {
                     roles.Add("Administrator");
+                    adminId = admin.AdminId;
                 }
 
                 // Verify credentials in Customer table
@@ -55,6 +60,7 @@ namespace Cart_It.Controllers
                 if (customer != null)
                 {
                     roles.Add("Customer");
+                    customerId = customer.CustomerId;
                 }
 
                 // Verify credentials in Seller table
@@ -62,6 +68,7 @@ namespace Cart_It.Controllers
                 if (seller != null)
                 {
                     roles.Add("Seller");
+                    sellerId = seller.SellerId;
                 }
 
                 // If no roles found, return unauthorized
@@ -72,7 +79,8 @@ namespace Cart_It.Controllers
                 }
 
                 // Generate token with all assigned roles
-                return GenerateToken(request.Email, roles);
+                return GenerateToken(request.Email, roles, admin?.AdminId, customer?.CustomerId, seller?.SellerId);
+
             }
             catch (Exception ex)
             {
@@ -82,76 +90,9 @@ namespace Cart_It.Controllers
         }
 
 
-        [HttpPost("refresh-token")]
-        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
-        {
-            try
-            {
-                // Validate the refresh token request
-                if (string.IsNullOrEmpty(request.RefreshToken))
-                {
-                    return BadRequest(new { Message = "Refresh token is required." });
-                }
-
-                // Validate the refresh token (This can be done by decoding the JWT and checking claims)
-                var principal = ValidateJwtToken(request.RefreshToken);
-                if (principal == null)
-                {
-                    return Unauthorized(new { Message = "Invalid or expired refresh token." });
-                }
-
-                // Extract user information from the token (email, role, etc.)
-                var email = principal.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value;
-                var role = principal.Claims.FirstOrDefault(c => c.Type == "Role")?.Value;
-
-                // If no email or role, return unauthorized
-                if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(role))
-                {
-                    return Unauthorized(new { Message = "Invalid refresh token payload." });
-                }
-
-                // Retrieve the corresponding user based on the role and email
-                object user = null;
-
-                if (role == "Admin")
-                {
-                    user = _context.Administrator.SingleOrDefault(a => a.Email == email);
-                }
-                else if (role == "Customer")
-                {
-                    user = _context.Customers.SingleOrDefault(c => c.Email == email);
-                }
-                else if (role == "Seller")
-                {
-                    user = _context.Sellers.SingleOrDefault(s => s.Email == email);
-                }
-
-                if (user == null)
-                {
-                    return Unauthorized(new { Message = "Invalid user." });
-                }
-
-                // Generate a new refresh token for the corresponding user (Admin, Customer, or Seller)
-                var newRefreshToken = GenerateRefreshToken(email);  // Use email for generating the new refresh token
-
-                // Save or store the new refresh token in-memory or return it
-                SaveRefreshToken(newRefreshToken);
-
-                // Return the new access and refresh tokens
-                var accessToken = IssueAccessToken(user);  // Generate a new access token using the user information
-
-                return Ok(new { AccessToken = accessToken, RefreshToken = newRefreshToken });
-            }
-            catch (Exception ex)
-            {
-                // Log the error and return a 500 error if something goes wrong
-                _logger.LogError(ex, "An error occurred while refreshing the token.");
-                return StatusCode(500, new { Message = "An error occurred while refreshing the token. Please try again later." });
-            }
-        }
-
+        
         // Generate JWT Token
-        private IActionResult GenerateToken(string email, List<string> roles)
+        private IActionResult GenerateToken(string email, List<string> roles, int? adminId, int? customerId, int? sellerId)
         {
             var secretKey = _configuration["Jwt:Key"];
             if (string.IsNullOrEmpty(secretKey))
@@ -175,6 +116,19 @@ namespace Cart_It.Controllers
             {
                 claims.Add(new Claim("roles", role)); // Use "roles" to align with RoleClaimType in token validation
             }
+            // Add user-specific ID claim
+            if (adminId.HasValue)
+            {
+                claims.Add(new Claim("AdminId", adminId.Value.ToString()));
+            }
+            if (customerId.HasValue)
+            {
+                claims.Add(new Claim("CustomerId", customerId.Value.ToString()));
+            }
+            if (sellerId.HasValue)
+            {
+                claims.Add(new Claim("SellerId", sellerId.Value.ToString()));
+            }
 
             // Generate token
             var token = new JwtSecurityToken(
@@ -186,12 +140,15 @@ namespace Cart_It.Controllers
             );
 
             var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
-            _logger.LogInformation("Token generated successfully for email: {Email}, Roles: {Roles}", email, string.Join(", ", roles));
+            _logger.LogInformation("Token generated successfully for email: {Email}, Roles: {Roles}, AdminId: {AdminId}, CustomerId: {CustomerId}, SellerId: {SellerId}",email, string.Join(", ", roles), adminId, customerId, sellerId);
 
             return Ok(new
             {
                 Token = tokenString,
-                Roles = roles
+                Roles = roles,
+                AdminId = adminId,
+                CustomerId = customerId,
+                SellerId = sellerId
             });
         }
 
@@ -280,6 +237,77 @@ namespace Cart_It.Controllers
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
+        /*
+         
+        [HttpPost("refresh-token")]
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
+        {
+            try
+            {
+                // Validate the refresh token request
+                if (string.IsNullOrEmpty(request.RefreshToken))
+                {
+                    return BadRequest(new { Message = "Refresh token is required." });
+                }
+
+                // Validate the refresh token (This can be done by decoding the JWT and checking claims)
+                var principal = ValidateJwtToken(request.RefreshToken);
+                if (principal == null)
+                {
+                    return Unauthorized(new { Message = "Invalid or expired refresh token." });
+                }
+
+                // Extract user information from the token (email, role, etc.)
+                var email = principal.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value;
+                var role = principal.Claims.FirstOrDefault(c => c.Type == "Role")?.Value;
+
+                // If no email or role, return unauthorized
+                if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(role))
+                {
+                    return Unauthorized(new { Message = "Invalid refresh token payload." });
+                }
+
+                // Retrieve the corresponding user based on the role and email
+                object user = null;
+
+                if (role == "Admin")
+                {
+                    user = _context.Administrator.SingleOrDefault(a => a.Email == email);
+                }
+                else if (role == "Customer")
+                {
+                    user = _context.Customers.SingleOrDefault(c => c.Email == email);
+                }
+                else if (role == "Seller")
+                {
+                    user = _context.Sellers.SingleOrDefault(s => s.Email == email);
+                }
+
+                if (user == null)
+                {
+                    return Unauthorized(new { Message = "Invalid user." });
+                }
+
+                // Generate a new refresh token for the corresponding user (Admin, Customer, or Seller)
+                var newRefreshToken = GenerateRefreshToken(email);  // Use email for generating the new refresh token
+
+                // Save or store the new refresh token in-memory or return it
+                SaveRefreshToken(newRefreshToken);
+
+                // Return the new access and refresh tokens
+                var accessToken = IssueAccessToken(user);  // Generate a new access token using the user information
+
+                return Ok(new { AccessToken = accessToken, RefreshToken = newRefreshToken });
+            }
+            catch (Exception ex)
+            {
+                // Log the error and return a 500 error if something goes wrong
+                _logger.LogError(ex, "An error occurred while refreshing the token.");
+                return StatusCode(500, new { Message = "An error occurred while refreshing the token. Please try again later." });
+            }
+        }
+
+
         // Method to generate a new refresh token using the email
         private string GenerateRefreshToken(string email)
         {
@@ -306,5 +334,7 @@ namespace Cart_It.Controllers
             // You can also log the added token if needed for debugging
             _logger.LogInformation($"Refresh token saved: {refreshToken}");
         }
+
+        */
     }
 }

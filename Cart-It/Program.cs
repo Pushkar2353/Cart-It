@@ -31,11 +31,11 @@ namespace Cart_It
 
             builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 
-
+            builder.Services.AddAutoMapper(typeof(CustomerProfile));
             builder.Services.AddScoped<ICustomerRepository, Repository.CustomerRepository>();
             builder.Services.AddScoped<ICustomerService, CustomerService>();
 
-            builder.Services.AddAutoMapper(typeof(MappingProfile)); // Register AutoMapper
+            builder.Services.AddAutoMapper(typeof(SellerProfile));
             builder.Services.AddScoped<ISellerRepository, Repository.SellerRepository>();
             builder.Services.AddScoped<ISellerService, SellerService>();
 

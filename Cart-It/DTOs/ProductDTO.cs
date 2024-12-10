@@ -18,7 +18,7 @@ namespace Cart_It.DTOs
 
         [Required(ErrorMessage = "Product Price is required")]
         [DataType(DataType.Currency)]
-        public decimal? ProductPrice { get; set; }
+        public decimal ProductPrice { get; set; }
 
         [Required(ErrorMessage = "Stock Quantity is required")]
         [Range(1, int.MaxValue, ErrorMessage = "Stock must be at least 1.")]

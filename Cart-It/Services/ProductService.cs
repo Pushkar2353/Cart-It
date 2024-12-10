@@ -72,7 +72,13 @@ namespace Cart_It.Services
             // Update only provided fields, keep existing values for others
             existingProduct.ProductName = productDto.ProductName ?? existingProduct.ProductName;
             existingProduct.ProductDescription = productDto.ProductDescription ?? existingProduct.ProductDescription;
-            existingProduct.ProductPrice = productDto.ProductPrice ?? existingProduct.ProductPrice;
+
+            // Check if ProductPrice is provided (not default 0) before updating
+            if (productDto.ProductPrice != 0)
+            {
+                existingProduct.ProductPrice = productDto.ProductPrice;
+            }
+
             existingProduct.ProductStock = productDto.ProductStock ?? existingProduct.ProductStock;
             existingProduct.ProductUrl = productDto.ProductUrl ?? existingProduct.ProductUrl;
             existingProduct.CategoryId = productDto.CategoryId ?? existingProduct.CategoryId;

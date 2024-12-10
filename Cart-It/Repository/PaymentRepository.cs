@@ -32,10 +32,16 @@ namespace Cart_It.Repository
                 throw new InvalidOperationException("Customer not found.");
             }
 
-            var orderExists = await _context.Orders.AnyAsync(o => o.OrderId == payment.OrderId);
-            if (!orderExists)
+            var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderId == payment.OrderId);
+            if (order == null)
             {
                 throw new InvalidOperationException("Order not found.");
+            }
+
+            // Synchronize AmountToPay with Order's TotalAmount, handle null values safely
+            if (!payment.AmountToPay.HasValue)
+            {
+                payment.AmountToPay = order.TotalAmount;
             }
 
             _context.Payments.Add(payment);
@@ -51,7 +57,19 @@ namespace Cart_It.Repository
                 throw new InvalidOperationException("Payment not found.");
             }
 
-            // Mapping values from DTO to entity, updating only changed fields
+            var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderId == paymentDto.OrderId);
+            if (order == null)
+            {
+                throw new InvalidOperationException("Order not found.");
+            }
+
+            // Synchronize AmountToPay with Order's TotalAmount, handle null values safely
+            if (!paymentDto.AmountToPay.HasValue)
+            {
+                paymentDto.AmountToPay = order.TotalAmount;
+            }
+
+            // Map DTO to domain model (Payment)
             _mapper.Map(paymentDto, payment);
 
             _context.Payments.Update(payment);
@@ -62,9 +80,10 @@ namespace Cart_It.Repository
         public async Task<Payment?> GetPaymentByIdAsync(int paymentId)
         {
             return await _context.Payments
-                                 .Include(p => p.Orders)
-                                 .Include(p => p.Customers)
+                                 .Include(p => p.Orders) // Ensure Order navigation property is included
+                                 .Include(p => p.Customers) // Ensure Customer navigation property is included
                                  .FirstOrDefaultAsync(p => p.PaymentId == paymentId);
         }
     }
+
 }

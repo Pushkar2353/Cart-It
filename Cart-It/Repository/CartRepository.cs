@@ -48,16 +48,18 @@ namespace Cart_It.Repository
             }
 
             // Check if ProductId exists in the Products table
-            var productExists = await _context.Products.AnyAsync(p => p.ProductId == cart.ProductId);
-            if (!productExists)
+            var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductId == cart.ProductId);
+            if (product == null)
             {
                 throw new InvalidOperationException("The specified product does not exist.");
             }
 
+            // Set the Amount in Cart to the Product's Price (ProductPrice)
+            cart.Amount = product.ProductPrice;
+
             _context.Carts.Add(cart);
             await _context.SaveChangesAsync();
         }
-
 
         public async Task UpdateCartAsync(int cartId, Cart cart)
         {
@@ -66,8 +68,15 @@ namespace Cart_It.Repository
             {
                 existingCart.CustomerId = cart.CustomerId != 0 ? cart.CustomerId : existingCart.CustomerId;
                 existingCart.ProductId = cart.ProductId != 0 ? cart.ProductId : existingCart.ProductId;
+
+                // Ensure Amount is equal to the Product's Price (ProductPrice)
+                var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductId == cart.ProductId);
+                if (product != null)
+                {
+                    existingCart.Amount = product.ProductPrice;
+                }
+
                 existingCart.CartQuantity = cart.CartQuantity != 0 ? cart.CartQuantity : existingCart.CartQuantity;
-                existingCart.Amount = cart.Amount.HasValue ? cart.Amount : existingCart.Amount;
                 existingCart.UpdatedDate = DateTime.Now;
 
                 _context.Carts.Update(existingCart);
