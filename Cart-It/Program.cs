@@ -115,6 +115,14 @@ namespace Cart_It
             });
 
 
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAll",
+                    builder => builder.AllowAnyOrigin()
+                                      .AllowAnyMethod()
+                                      .AllowAnyHeader());
+            });
+
 
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
@@ -185,6 +193,8 @@ namespace Cart_It
             app.UseRouting();
             app.UseAuthentication(); // Authentication middleware must come first
             app.UseAuthorization();  // Authorization middleware must come after authentication
+            app.UseCors("AllowAll");
+
             app.MapControllers();
 
             app.Run();

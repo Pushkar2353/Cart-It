@@ -46,6 +46,8 @@ namespace Cart_It.Controllers
                 int? sellerId = null;
                 int? customerId = null;
                 int? adminId = null;
+                string firstName = null;
+                string lastName = null;
 
                 // Verify credentials in Admin table
                 var admin = _context.Administrator.SingleOrDefault(a => a.Email == request.Email && a.Password == request.Password);
@@ -53,6 +55,7 @@ namespace Cart_It.Controllers
                 {
                     roles.Add("Administrator");
                     adminId = admin.AdminId;
+                    // Admin doesn't have first name and last name, so we leave it null
                 }
 
                 // Verify credentials in Customer table
@@ -61,6 +64,8 @@ namespace Cart_It.Controllers
                 {
                     roles.Add("Customer");
                     customerId = customer.CustomerId;
+                    firstName = customer.FirstName;
+                    lastName = customer.LastName;
                 }
 
                 // Verify credentials in Seller table
@@ -69,6 +74,8 @@ namespace Cart_It.Controllers
                 {
                     roles.Add("Seller");
                     sellerId = seller.SellerId;
+                    firstName = seller.FirstName;
+                    lastName = seller.LastName;
                 }
 
                 // If no roles found, return unauthorized
@@ -79,8 +86,21 @@ namespace Cart_It.Controllers
                 }
 
                 // Generate token with all assigned roles
-                return GenerateToken(request.Email, roles, admin?.AdminId, customer?.CustomerId, seller?.SellerId);
+                var tokenResponse = GenerateToken(request.Email, roles, admin?.AdminId, customer?.CustomerId, seller?.SellerId);
 
+                // Prepare the response with the user's first name, last name, roles, and generated token
+                var response = new
+                {
+                    FirstName = firstName,   // Only set for Customer and Seller
+                    LastName = lastName,     // Only set for Customer and Seller
+                    Roles = roles,
+                    AdminId = adminId,
+                    CustomerId = customerId,
+                    SellerId = sellerId
+                };
+
+                // Return the response with the token and user info
+                return Ok(new { Token = tokenResponse, User = response });
             }
             catch (Exception ex)
             {
@@ -90,9 +110,7 @@ namespace Cart_It.Controllers
         }
 
 
-        
-        // Generate JWT Token
-        private IActionResult GenerateToken(string email, List<string> roles, int? adminId, int? customerId, int? sellerId)
+        private string GenerateToken(string email, List<string> roles, int? adminId, int? customerId, int? sellerId)
         {
             var secretKey = _configuration["Jwt:Key"];
             if (string.IsNullOrEmpty(secretKey))
@@ -116,6 +134,7 @@ namespace Cart_It.Controllers
             {
                 claims.Add(new Claim("roles", role)); // Use "roles" to align with RoleClaimType in token validation
             }
+
             // Add user-specific ID claim
             if (adminId.HasValue)
             {
@@ -140,16 +159,10 @@ namespace Cart_It.Controllers
             );
 
             var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
-            _logger.LogInformation("Token generated successfully for email: {Email}, Roles: {Roles}, AdminId: {AdminId}, CustomerId: {CustomerId}, SellerId: {SellerId}",email, string.Join(", ", roles), adminId, customerId, sellerId);
+            _logger.LogInformation("Token generated successfully for email: {Email}, Roles: {Roles}, AdminId: {AdminId}, CustomerId: {CustomerId}, SellerId: {SellerId}",
+                email, string.Join(", ", roles), adminId, customerId, sellerId);
 
-            return Ok(new
-            {
-                Token = tokenString,
-                Roles = roles,
-                AdminId = adminId,
-                CustomerId = customerId,
-                SellerId = sellerId
-            });
+            return tokenString;
         }
 
 

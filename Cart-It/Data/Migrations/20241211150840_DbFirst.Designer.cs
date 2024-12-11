@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Cart_It.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20241124061149_DbFirst")]
+    [Migration("20241211150840_DbFirst")]
     partial class DbFirst
     {
         /// <inheritdoc />
@@ -80,7 +80,8 @@ namespace Cart_It.Migrations
 
                     b.HasKey("CartId");
 
-                    b.HasIndex("CustomerId");
+                    b.HasIndex("CustomerId")
+                        .IsUnique();
 
                     b.HasIndex("ProductId");
 
@@ -186,6 +187,30 @@ namespace Cart_It.Migrations
                     b.ToTable("Customers");
                 });
 
+            modelBuilder.Entity("Cart_It.Models.JWT.RefreshToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("Expiration")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("RefreshTokens");
+                });
+
             modelBuilder.Entity("Cart_It.Models.Order", b =>
                 {
                     b.Property<int>("OrderId")
@@ -241,10 +266,10 @@ namespace Cart_It.Migrations
                     b.Property<decimal>("AmountToPay")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<int?>("CustomerId")
+                    b.Property<int>("CustomerId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("OrderId")
+                    b.Property<int>("OrderId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("PaymentDate")
@@ -296,7 +321,7 @@ namespace Cart_It.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<decimal?>("ProductPrice")
+                    b.Property<decimal>("ProductPrice")
                         .HasColumnType("decimal(18, 2)");
 
                     b.Property<int?>("ProductStock")
@@ -342,7 +367,7 @@ namespace Cart_It.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("GETDATE()");
 
-                    b.Property<int?>("ProductId")
+                    b.Property<int>("ProductId")
                         .HasColumnType("int");
 
                     b.HasKey("InventoryId");
@@ -360,10 +385,10 @@ namespace Cart_It.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ReviewId"));
 
-                    b.Property<int?>("CustomerId")
+                    b.Property<int>("CustomerId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("ProductId")
+                    b.Property<int>("ProductId")
                         .HasColumnType("int");
 
                     b.Property<int>("Rating")
@@ -502,8 +527,8 @@ namespace Cart_It.Migrations
             modelBuilder.Entity("Cart_It.Models.Cart", b =>
                 {
                     b.HasOne("Cart_It.Models.Customer", "Customers")
-                        .WithMany("Carts")
-                        .HasForeignKey("CustomerId")
+                        .WithOne("Carts")
+                        .HasForeignKey("Cart_It.Models.Cart", "CustomerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -534,12 +559,14 @@ namespace Cart_It.Migrations
                     b.HasOne("Cart_It.Models.Customer", "Customers")
                         .WithMany("Payments")
                         .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("Cart_It.Models.Order", "Orders")
                         .WithMany("Payments")
                         .HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Customers");
 
@@ -570,7 +597,8 @@ namespace Cart_It.Migrations
                     b.HasOne("Cart_It.Models.Product", "Products")
                         .WithMany("ProductsInventory")
                         .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Products");
                 });
@@ -580,12 +608,14 @@ namespace Cart_It.Migrations
                     b.HasOne("Cart_It.Models.Customer", "Customers")
                         .WithMany("Reviews")
                         .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("Cart_It.Models.Product", "Products")
                         .WithMany("Reviews")
                         .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("Customers");
 

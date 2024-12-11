@@ -40,57 +40,48 @@ namespace Cart_It_Testing
 
 
         [Test]
-        public Task Login_ReturnsOk_WhenCredentialsAreValid()
+        public async Task Login_ReturnsOk_WhenCredentialsAreValid()
         {
-            try
+            // Arrange
+            var loginRequest = new LoginRequest { Email = "test@example.com", Password = "Password123" };
+
+            // Create a mock administrator for the test
+            var admin = new Administrator { Email = "test@example.com", Password = "Password123", AdminId = 1 };
+
+            // Mock the DbSet for Administrator to return a list containing the mock admin
+            var queryable = new List<Administrator> { admin }.AsQueryable();
+            var dbSetMock = new Mock<DbSet<Administrator>>();
+            dbSetMock.As<IQueryable<Administrator>>().Setup(m => m.Provider).Returns(queryable.Provider);
+            dbSetMock.As<IQueryable<Administrator>>().Setup(m => m.Expression).Returns(queryable.Expression);
+            dbSetMock.As<IQueryable<Administrator>>().Setup(m => m.ElementType).Returns(queryable.ElementType);
+            dbSetMock.As<IQueryable<Administrator>>().Setup(m => m.GetEnumerator()).Returns(queryable.GetEnumerator());
+
+            // Mock the DbContext to return the mocked DbSet for Administrator
+            _dbContextMock.Setup(db => db.Administrator).Returns(dbSetMock.Object);
+
+            // Act
+            var result = _controller.Login(loginRequest);
+
+            // Assert
+            Assert.IsInstanceOf<ObjectResult>(result);
+            var objectResult = result as ObjectResult;
+            Assert.IsNotNull(objectResult);
+
+            if (objectResult.StatusCode == 500)
             {
-                // Arrange
-                var loginRequest = new LoginRequest { Email = "test@example.com", Password = "Password123" };
-
-                var admin = new Administrator { Email = "test@example.com", Password = "Password123", AdminId = 1 };
-
-                // Create a mocked IQueryable
-                var queryable = new List<Administrator> { admin }.AsQueryable();
-
-                // Mock the DbSet to return the IQueryable
-                var dbSetMock = new Mock<DbSet<Administrator>>();
-                dbSetMock.As<IQueryable<Administrator>>().Setup(m => m.Provider).Returns(queryable.Provider);
-                dbSetMock.As<IQueryable<Administrator>>().Setup(m => m.Expression).Returns(queryable.Expression);
-                dbSetMock.As<IQueryable<Administrator>>().Setup(m => m.ElementType).Returns(queryable.ElementType);
-                dbSetMock.As<IQueryable<Administrator>>().Setup(m => m.GetEnumerator()).Returns(queryable.GetEnumerator());
-
-                // Mock the DbContext to return the mocked DbSet
-                _dbContextMock.Setup(db => db.Administrator).Returns(dbSetMock.Object);
-
-                // Mock JWT configuration
-                _configurationMock.Setup(c => c["Jwt:Key"]).Returns("some-secret-key");
-                _configurationMock.Setup(c => c["Jwt:Issuer"]).Returns("issuer");
-                _configurationMock.Setup(c => c["Jwt:Audience"]).Returns("audience");
-
-                // Act
-                var result = _controller.Login(loginRequest);
-
-                // Assert
-                if (result is ObjectResult objectResult)
-                {
-                    Assert.IsNotNull(objectResult);
-                    Assert.AreEqual(200, objectResult.StatusCode);  // Verify it's a 200 OK response
-                    Assert.That(objectResult.Value, Is.InstanceOf(typeof(object)));  // Verify the type of the returned value
-                }
-                else
-                {
-                    Assert.Fail("Expected ObjectResult, but got: " + result.GetType());
-                }
+                Console.WriteLine($"Error message: {objectResult.Value}");
+                Assert.Fail($"Expected status code 200, but got 500. Error: {objectResult.Value}");
             }
-            catch (Exception ex)
+            else
             {
-                Assert.Fail($"Test failed with exception: {ex.Message}");
-            }
+                Assert.AreEqual(200, objectResult.StatusCode);
 
-            return Task.CompletedTask;
+                // Additional check for the returned token
+                var returnedValue = objectResult.Value as dynamic;
+                Assert.IsNotNull(returnedValue);
+                Assert.IsNotNull(returnedValue.token);
+            }
         }
-
-
 
         [Test]
         public Task Login_ReturnsUnauthorized_WhenInvalidCredentials()

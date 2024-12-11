@@ -86,10 +86,10 @@ namespace Cart_It.Data
                       .HasMaxLength(10);
 
                 // Relationships
-                entity.HasMany(c => c.Carts)
-                      .WithOne(cart => cart.Customers)
-                      .HasForeignKey(cart => cart.CustomerId)
-                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(c => c.Carts) // Customer has one Cart
+          .WithOne(cart => cart.Customers) // Cart has one Customer
+          .HasForeignKey<Cart>(cart => cart.CustomerId) // Foreign key in Cart
+          .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasMany(c => c.Orders)
                       .WithOne(order => order.Customers)
@@ -230,6 +230,9 @@ namespace Cart_It.Data
                 // Primary Key
                 entity.HasKey(p => p.ProductId);
 
+                entity.Property(p => p.ProductId)
+                      .ValueGeneratedOnAdd();
+
                 // Configure properties
                 entity.Property(p => p.ProductName)
                       .IsRequired() // Ensures the ProductName cannot be null
@@ -348,10 +351,10 @@ namespace Cart_It.Data
                       .HasForeignKey(c => c.ProductId)
                       .OnDelete(DeleteBehavior.Cascade); // Cascade delete if Product is deleted
 
-                entity.HasOne(c => c.Customers)
-                      .WithMany(cust => cust.Carts)
-                      .HasForeignKey(c => c.CustomerId)
-                      .OnDelete(DeleteBehavior.Cascade); // Cascade delete if Customer is deleted
+                entity.HasOne(cart => cart.Customers) // Cart has one Customer
+          .WithOne(customer => customer.Carts) // Customer has one Cart
+          .HasForeignKey<Cart>(cart => cart.CustomerId) // Foreign key in Cart
+          .OnDelete(DeleteBehavior.Cascade); // Cascade delete if Customer is deleted
             });
 
 
@@ -422,6 +425,9 @@ namespace Cart_It.Data
                 // Primary Key
                 entity.HasKey(p => p.PaymentId);
 
+                entity.Property(p => p.PaymentId)
+                      .ValueGeneratedOnAdd();
+
                 // Configure properties
                 entity.Property(p => p.AmountToPay)
                       .HasColumnType("decimal(18,2)")
@@ -459,6 +465,10 @@ namespace Cart_It.Data
             {
                 // Primary Key
                 entity.HasKey(r => r.ReviewId);
+
+                entity.Property(r => r.ReviewId)
+                      .ValueGeneratedOnAdd();
+
 
                 // Configure properties
                 entity.Property(r => r.Rating)

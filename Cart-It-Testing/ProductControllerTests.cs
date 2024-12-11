@@ -3,6 +3,7 @@ using Cart_It.Controllers;
 using Cart_It.DTOs;
 using Cart_It.Models;
 using Cart_It.Services;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -20,14 +21,26 @@ namespace Cart_It_Testing
     {
         private Mock<IProductService> _mockProductService;
         private Mock<ILogger<ProductController>> _mockLogger;
+        private Mock<IWebHostEnvironment> _mockWebHostEnvironment; // Mock for WebHostEnvironment
         private ProductController _controller;
 
         [SetUp]
         public void SetUp()
         {
+            // Mock the IProductService
             _mockProductService = new Mock<IProductService>();
+
+            // Mock the ILogger
             _mockLogger = new Mock<ILogger<ProductController>>();
-            _controller = new ProductController(_mockProductService.Object, _mockLogger.Object);
+
+            // Mock the IWebHostEnvironment
+            _mockWebHostEnvironment = new Mock<IWebHostEnvironment>();
+
+            // Setup WebHostEnvironment mock to return a fake WebRootPath
+            _mockWebHostEnvironment.Setup(env => env.WebRootPath).Returns("C:\\fakepath\\wwwroot");
+
+            // Create the controller, passing all the required dependencies
+            _controller = new ProductController(_mockProductService.Object, _mockLogger.Object, _mockWebHostEnvironment.Object);
         }
 
         [Test]
@@ -171,14 +184,16 @@ namespace Cart_It_Testing
         {
             // Arrange
             int productId = 1;
+            _mockProductService.Setup(service => service.GetProductByIdAsync(productId)).ReturnsAsync(new ProductDTO { ProductId = productId });
             _mockProductService.Setup(service => service.DeleteProductAsync(productId)).Returns(Task.CompletedTask);
 
             // Act
             var result = await _controller.DeleteProduct(productId);
 
             // Assert
-            Assert.IsInstanceOf<NoContentResult>(result);
+            Assert.IsInstanceOf<NoContentResult>(result);  // This checks if NoContentResult is returned
         }
+
 
         [Test]
         public async Task DeleteProduct_ReturnsNotFound_WhenProductDoesNotExist()
@@ -200,5 +215,4 @@ namespace Cart_It_Testing
             Assert.AreEqual("Product not found", response["message"].ToString());
         }
     }
-
 }

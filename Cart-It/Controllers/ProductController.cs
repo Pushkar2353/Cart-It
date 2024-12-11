@@ -1,5 +1,6 @@
 ﻿using Cart_It.DTOs;
 using Cart_It.Services;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,11 +12,13 @@ namespace Cart_It.Controllers
     {
         private readonly IProductService _productService;
         private readonly ILogger<ProductController> _logger;
+        private readonly IWebHostEnvironment _webHostEnvironment;
 
-        public ProductController(IProductService productService, ILogger<ProductController> logger)
+        public ProductController(IProductService productService, ILogger<ProductController> logger, IWebHostEnvironment webHostEnvironment)
         {
             _productService = productService;
             _logger = logger;
+            _webHostEnvironment = webHostEnvironment;
         }
 
         [HttpGet]
@@ -63,7 +66,7 @@ namespace Cart_It.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddProduct([FromBody] ProductDTO productDto)
+        public async Task<IActionResult> AddProduct([FromForm] ProductDTO productDto)
         {
             try
             {
@@ -71,6 +74,13 @@ namespace Cart_It.Controllers
                 {
                     _logger.LogWarning("Received null data for product creation.");
                     return BadRequest(new { message = "Invalid product data." });
+                }
+
+                if (productDto.ProductImage != null)
+                {
+                    // Save the product image and get the saved image path
+                    var imagePath = await SaveProductImageAsync(productDto.ProductImage);
+                    productDto.ProductImagePath = imagePath;
                 }
 
                 _logger.LogInformation("Adding a new product with name {ProductName}.", productDto.ProductName);
@@ -87,8 +97,9 @@ namespace Cart_It.Controllers
             }
         }
 
+        // Update product
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateProduct(int id, [FromBody] ProductDTO productDto)
+        public async Task<IActionResult> UpdateProduct(int id, [FromForm] ProductDTO productDto)
         {
             try
             {
@@ -98,9 +109,22 @@ namespace Cart_It.Controllers
                     return BadRequest(new { message = "Invalid product data." });
                 }
 
+                if (productDto.ProductImage != null)
+                {
+                    // Save the new product image and get the saved image path
+                    var imagePath = await SaveProductImageAsync(productDto.ProductImage);
+                    productDto.ProductImagePath = imagePath;
+                }
+
                 _logger.LogInformation("Updating product with ID {ProductId}.", id);
 
                 var updatedProduct = await _productService.UpdateProductAsync(id, productDto);
+
+                if (updatedProduct == null)
+                {
+                    _logger.LogWarning("Product with ID {ProductId} not found for update.", id);
+                    return NotFound(new { message = $"Product with ID {id} not found." });
+                }
 
                 _logger.LogInformation("Product with ID {ProductId} updated successfully.", id);
                 return Ok(updatedProduct);
@@ -117,6 +141,7 @@ namespace Cart_It.Controllers
             }
         }
 
+        // Delete product
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProduct(int id)
         {
@@ -124,21 +149,57 @@ namespace Cart_It.Controllers
             {
                 _logger.LogInformation("Attempting to delete product with ID {ProductId}.", id);
 
+                var product = await _productService.GetProductByIdAsync(id);
+                if (product == null)
+                {
+                    _logger.LogWarning("Product with ID {ProductId} not found for deletion.", id);
+                    return NotFound(new { message = $"Product not found" });
+                }
+
+                // Delete the image from server if it exists
+                if (!string.IsNullOrEmpty(product.ProductImagePath))
+                {
+                    var imagePath = Path.Combine(_webHostEnvironment.WebRootPath, product.ProductImagePath);
+                    if (System.IO.File.Exists(imagePath))
+                    {
+                        System.IO.File.Delete(imagePath);
+                        _logger.LogInformation("Product image for ID {ProductId} deleted from server.", id);
+                    }
+                }
+
                 await _productService.DeleteProductAsync(id);
 
                 _logger.LogInformation("Product with ID {ProductId} deleted successfully.", id);
                 return NoContent();
             }
-            catch (KeyNotFoundException ex)
-            {
-                _logger.LogWarning("Product with ID {ProductId} not found for deletion.", id);
-                return NotFound(new { message = ex.Message });
-            }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while deleting product with ID {ProductId}.", id);
-                return StatusCode(500, new { message = ex.Message });
+                _logger.LogError($"An error occurred while deleting the product: {ex.Message}");
+                return StatusCode(500, new { message = "An error occurred while processing your request" });
             }
+        }
+
+        // Method to save the image file
+        private async Task<string> SaveProductImageAsync(IFormFile productImage)
+        {
+            if (productImage == null) return string.Empty;
+
+            var fileName = Guid.NewGuid().ToString() + Path.GetExtension(productImage.FileName);
+            var filePath = Path.Combine(_webHostEnvironment.WebRootPath, "images", fileName);
+
+            // Ensure the directory exists
+            var directory = Path.GetDirectoryName(filePath);
+            if (!Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await productImage.CopyToAsync(fileStream);
+            }
+
+            return "images/" + fileName; // Return the relative path
         }
 
         [HttpGet("category/{categoryId}")]

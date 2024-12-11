@@ -22,12 +22,14 @@ namespace Cart_It.Services
         private readonly AppDbContext _context;
         private readonly IProductRepository _productRepository;
         private readonly IMapper _mapper;
+        private readonly IWebHostEnvironment _webHostEnvironment;
 
-        public ProductService(IProductRepository productRepository, IMapper mapper, AppDbContext context)
+        public ProductService(IProductRepository productRepository, IMapper mapper, AppDbContext context, IWebHostEnvironment webHostEnvironment)
         {
             _productRepository = productRepository;
             _mapper = mapper;
             _context = context;
+            _webHostEnvironment = webHostEnvironment;
         }
 
         public async Task<ProductDTO> GetProductByIdAsync(int productId)
@@ -98,6 +100,33 @@ namespace Cart_It.Services
         {
             var products = await _productRepository.GetProductsByCategoryIdAsync(categoryId);
             return _mapper.Map<IEnumerable<ProductDTO>>(products);
+        }
+
+        public async Task<string> SaveProductImageAsync(IFormFile productImage)
+        {
+            if (productImage == null) return string.Empty;
+
+            // Generate a unique file name to avoid file name collisions
+            var fileName = Guid.NewGuid().ToString() + Path.GetExtension(productImage.FileName);
+
+            // Define the path to save the image
+            var filePath = Path.Combine(_webHostEnvironment.WebRootPath, "images", fileName);
+
+            // Ensure the directory exists
+            var directory = Path.GetDirectoryName(filePath);
+            if (!Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            // Save the image to the specified directory
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await productImage.CopyToAsync(fileStream);
+            }
+
+            // Return the relative path to the image
+            return "images/" + fileName;
         }
     }
 
