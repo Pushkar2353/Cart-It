@@ -1,0 +1,92 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f4;
+  color: #333;
+}
+
+h2 {
+  text-align: center;
+  color: #444;
+}
+
+.register-container {
+  width: 100%;
+  max-width: 400px;
+  margin: 50px auto;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+input,
+button {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+button {
+  background-color: #007bff;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  border: none;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+}
+
+p {
+  text-align: center;
+  color: #666;
+}
+
+.register-container button {
+  max-width: 200px;
+  margin: 10px auto;
+}
+
+.register-container .error {
+  color: red;
+  font-size: 14px;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .register-container {
+    margin: 20px auto;
+    padding: 10px;
+  }
+}
+
+.welcome-message {
+  display: flex;
+  align-items: center;
+}
+
+.logout-button {
+  margin-left: 10px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: #007bff;
+  font-size: 16px;
+}
+
+

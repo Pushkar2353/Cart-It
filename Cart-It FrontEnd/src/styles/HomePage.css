@@ -1,0 +1,195 @@
+/* Global Imports */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+
+/* Color Palette */
+:root {
+  --primary-color: #1c92d2;
+  --secondary-color: #f2fcfe;
+  --accent-color: #141e30;
+  --text-color: #333;
+  --background-color: #f3f4f6;
+  --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Global Resets */
+body {
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(to bottom, #ffffff, var(--background-color));
+  color: var(--text-color);
+  line-height: 1.6;
+}
+
+/* Header Styles */
+header {
+  background: linear-gradient(to right, var(--primary-color), var(--secondary-color)) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+header h1 {
+  font-weight: 700;
+  letter-spacing: -1px;
+}
+
+/* Navigation Styles */
+nav a {
+  text-decoration: none;
+  color: var(--text-color);
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+nav a:hover {
+  color: var(--primary-color);
+}
+
+.dropdown-menu {
+  border-radius: 8px;
+  box-shadow: var(--card-shadow);
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Search Bar Styles */
+.input-group {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.input-group input {
+  border-radius: 20px 0 0 20px;
+  padding: 10px 15px;
+  transition: all 0.3s ease;
+}
+
+.input-group input:focus {
+  box-shadow: 0 0 0 0.2rem rgba(28, 146, 210, 0.25);
+  border-color: var(--primary-color);
+}
+
+.input-group .btn {
+  border-radius: 0 20px 20px 0;
+  padding: 10px 15px;
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  transition: all 0.3s ease;
+}
+
+.input-group .btn:hover {
+  background-color: #1a7cb0;
+}
+
+/* Category Button Styles */
+.btn-outline-dark {
+  border-radius: 20px;
+  margin: 5px;
+  transition: all 0.3s ease;
+}
+
+.btn-outline-dark.active {
+  background-color: var(--primary-color);
+  color: white !important;
+}
+
+.btn-outline-dark:hover {
+  background-color: var(--primary-color);
+  color: white !important;
+}
+
+/* Product Card Styles */
+.card {
+  border: none;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  margin: 15px 5px;
+  box-shadow: var(--card-shadow);
+}
+
+.card:hover {
+  transform: scale(1.03);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card-img-top {
+  transition: transform 0.3s ease;
+}
+
+.card:hover .card-img-top {
+  transform: scale(1.1);
+}
+
+.card-body {
+  padding: 15px;
+  text-align: center;
+}
+
+.card-title {
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.card .btn-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  border-radius: 20px;
+  padding: 8px 15px;
+  transition: all 0.3s ease;
+}
+
+.card .btn-primary:hover {
+  background-color: #1a7cb0;
+  transform: translateY(-2px);
+}
+
+/* Footer Styles */
+footer {
+  background: var(--accent-color) !important;
+  color: white;
+  padding: 20px 0;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  header {
+    padding: 10px 0;
+  }
+
+  .input-group {
+    width: 100%;
+  }
+
+  .card {
+    margin: 10px 0;
+  }
+}
+
+/* Slider Customizations */
+.slick-dots li button:before {
+  color: var(--primary-color);
+}
+
+.slick-prev:before,
+.slick-next:before {
+  color: var(--primary-color) !important;
+}
+
+/* Cart Badge */
+.badge {
+  background-color: var(--primary-color) !important;
+}
+
+/* Utility Animations */
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slide-in {
+  animation: slideIn 0.5s ease forwards;
+}
+  
