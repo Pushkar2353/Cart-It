@@ -11,6 +11,11 @@ namespace Cart_It.Repository
         Task<Payment> AddPaymentAsync(Payment payment);
         Task<Payment> UpdatePaymentAsync(int paymentId, PaymentDTO paymentDto);
         Task<Payment?> GetPaymentByIdAsync(int paymentId);
+        Task<IEnumerable<PaymentDTO>> GetPaymentsByCustomerIdAsync(int customerId);
+        Task<IEnumerable<PaymentDTO>> GetPaymentsBySellerIdAsync(int sellerId);
+        Task<IEnumerable<Payment>> GetAllPaymentsAsync();
+
+
     }
 
     public class PaymentRepository : IPaymentRepository
@@ -83,6 +88,39 @@ namespace Cart_It.Repository
                                  .Include(p => p.Orders) // Ensure Order navigation property is included
                                  .Include(p => p.Customers) // Ensure Customer navigation property is included
                                  .FirstOrDefaultAsync(p => p.PaymentId == paymentId);
+        }
+
+        public async Task<IEnumerable<Payment>> GetAllPaymentsAsync()
+        {
+            return await _context.Payments
+                .Include(p => p.Customers)
+                .Include(p => p.Orders)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<PaymentDTO>> GetPaymentsByCustomerIdAsync(int customerId)
+        {
+            return await _context.Payments
+                .Where(p => p.CustomerId == customerId)
+                .Select(p => new PaymentDTO
+                {
+                    PaymentId = p.PaymentId,
+                    PaymentDate = p.PaymentDate,
+                    AmountToPay = p.AmountToPay
+                }).ToListAsync();
+        }
+
+        public async Task<IEnumerable<PaymentDTO>> GetPaymentsBySellerIdAsync(int sellerId)
+        {
+            return await _context.Payments
+                .Where(p => p.Orders.Products.Any(prod => prod.SellerId == sellerId))  // Check if any product in the order matches the sellerId
+                .Select(p => new PaymentDTO
+                {
+                    PaymentId = p.PaymentId,
+                    OrderId = p.OrderId,  // Assuming Payment has an OrderId property to reference the associated order
+                    PaymentDate = p.PaymentDate,
+                })
+                .ToListAsync();
         }
     }
 

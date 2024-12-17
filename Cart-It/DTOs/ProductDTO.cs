@@ -28,13 +28,6 @@ namespace Cart_It.DTOs
 
         [Required(ErrorMessage = "Product Url is required")]
         [StringLength(200, ErrorMessage = "Product Url must not exceed 200 characters.")]
-        public string ProductUrl { get; set; } = string.Empty;
-
-        [NotMapped]
-        public IFormFile? ProductImage { get; set; }
-
-        [Required(ErrorMessage = "Product Image Path is required")]
-        [StringLength(500, ErrorMessage = "Product Image Path must not exceed 500 characters.")]
-        public string ProductImagePath { get; set; } = string.Empty;
+        public string ProductImageUrl { get; set; } = string.Empty;
     }
 }

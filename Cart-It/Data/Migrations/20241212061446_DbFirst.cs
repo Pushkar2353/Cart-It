@@ -145,8 +145,7 @@ namespace Cart_It.Migrations
                     ProductStock = table.Column<int>(type: "int", nullable: true),
                     CategoryId = table.Column<int>(type: "int", nullable: false),
                     SellerId = table.Column<int>(type: "int", nullable: false),
-                    ProductUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    ProductImagePath = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    ProductImageUrl = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {

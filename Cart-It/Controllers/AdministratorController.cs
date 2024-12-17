@@ -178,6 +178,146 @@ namespace Cart_It.Controllers
             }
         }
 
+        // GET: api/administrator/customers
+        [HttpGet("customers")]
+        public async Task<ActionResult<IEnumerable<CustomerDTO>>> GetAllCustomers()
+        {
+            try
+            {
+                _logger.LogInformation("Fetching all customers");
+
+                var customers = await _administratorService.GetAllCustomersAsync();
+
+                _logger.LogInformation("Successfully fetched {CustomerCount} customers", customers.Count());
+                return Ok(customers);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while fetching all customers");
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+        // GET: api/administrator/sellers
+        [HttpGet("sellers")]
+        public async Task<ActionResult<IEnumerable<SellerDTO>>> GetAllSellers()
+        {
+            try
+            {
+                _logger.LogInformation("Fetching all sellers");
+
+                var sellers = await _administratorService.GetAllSellersAsync();
+
+                _logger.LogInformation("Successfully fetched {SellerCount} sellers", sellers.Count());
+                return Ok(sellers);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while fetching all sellers");
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+        // GET: api/administrator/products
+        [HttpGet("products")]
+        public async Task<ActionResult<IEnumerable<ProductDTO>>> GetAllProducts()
+        {
+            try
+            {
+                _logger.LogInformation("Fetching all products");
+
+                var products = await _administratorService.GetAllProductsAsync();
+
+                _logger.LogInformation("Successfully fetched {ProductCount} products", products.Count());
+                return Ok(products);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while fetching all products");
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+        // GET: api/administrator/categories
+        [HttpGet("categories")]
+        public async Task<ActionResult<IEnumerable<CategoryDTO>>> GetAllCategories()
+        {
+            try
+            {
+                _logger.LogInformation("Fetching all categories");
+
+                var categories = await _administratorService.GetAllCategoriesAsync();
+
+                _logger.LogInformation("Successfully fetched {CategoryCount} categories", categories.Count());
+                return Ok(categories);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while fetching all categories");
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+        // GET: api/administrator/orders
+        [HttpGet("orders")]
+        public async Task<ActionResult<IEnumerable<OrderDTO>>> GetAllOrders()
+        {
+            try
+            {
+                _logger.LogInformation("Fetching all orders");
+
+                var orders = await _administratorService.GetAllOrdersAsync();
+
+                _logger.LogInformation("Successfully fetched {OrderCount} orders", orders.Count());
+                return Ok(orders);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while fetching all orders");
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+        // GET: api/administrator/payments
+        [HttpGet("payments")]
+        public async Task<ActionResult<IEnumerable<PaymentDTO>>> GetAllPayments()
+        {
+            try
+            {
+                _logger.LogInformation("Fetching all payments");
+
+                var payments = await _administratorService.GetAllPaymentsAsync();
+
+                _logger.LogInformation("Successfully fetched {PaymentCount} payments", payments.Count());
+                return Ok(payments);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while fetching all payments");
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+        // GET: api/administrator/reviews
+        [HttpGet("reviews")]
+        public async Task<ActionResult<IEnumerable<ReviewDTO>>> GetAllReviews()
+        {
+            try
+            {
+                _logger.LogInformation("Fetching all reviews");
+
+                var reviews = await _administratorService.GetAllReviewsAsync();
+
+                _logger.LogInformation("Successfully fetched {ReviewCount} reviews", reviews.Count());
+                return Ok(reviews);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while fetching all reviews");
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
         /*
         // GET: api/customer/{id}
         [HttpGet("GetCustomerById/{id}")]

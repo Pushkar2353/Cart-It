@@ -38,7 +38,7 @@ namespace Cart_It_Testing
                 new CategoryDTO { CategoryId = 1, CategoryName = "Electronics" },
                 new CategoryDTO { CategoryId = 2, CategoryName = "Furniture" }
             };
-            _mockCategoryService.Setup(service => service.GetCategoriesAsync()).ReturnsAsync(categories);
+            _mockCategoryService.Setup(service => service.GetAllCategoriesAsync()).ReturnsAsync(categories);
 
             // Act
             var result = await _controller.GetCategories();
@@ -55,7 +55,7 @@ namespace Cart_It_Testing
         public async Task GetCategories_ReturnsStatusCode500_WhenExceptionOccurs()
         {
             // Arrange
-            _mockCategoryService.Setup(service => service.GetCategoriesAsync()).ThrowsAsync(new Exception("Error fetching categories"));
+            _mockCategoryService.Setup(service => service.GetAllCategoriesAsync()).ThrowsAsync(new Exception("Error fetching categories"));
 
             // Act
             var result = await _controller.GetCategories();

@@ -4,6 +4,7 @@ using Cart_It.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Cart_It.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241212061446_DbFirst")]
+    partial class DbFirst
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -77,7 +80,8 @@ namespace Cart_It.Migrations
 
                     b.HasKey("CartId");
 
-                    b.HasIndex("CustomerId");
+                    b.HasIndex("CustomerId")
+                        .IsUnique();
 
                     b.HasIndex("ProductId");
 
@@ -219,9 +223,7 @@ namespace Cart_It.Migrations
                         .HasColumnType("int");
 
                     b.Property<int?>("ItemQuantity")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1);
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("OrderDate")
                         .ValueGeneratedOnAdd()
@@ -521,8 +523,8 @@ namespace Cart_It.Migrations
             modelBuilder.Entity("Cart_It.Models.Cart", b =>
                 {
                     b.HasOne("Cart_It.Models.Customer", "Customers")
-                        .WithMany("Carts")
-                        .HasForeignKey("CustomerId")
+                        .WithOne("Carts")
+                        .HasForeignKey("Cart_It.Models.Cart", "CustomerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

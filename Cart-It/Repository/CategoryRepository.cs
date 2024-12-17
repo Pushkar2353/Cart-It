@@ -7,7 +7,7 @@ namespace Cart_It.Repository
     public interface ICategoryRepository
     {
         Task<Category> GetCategoryByIdAsync(int categoryId);
-        Task<IEnumerable<Category>> GetCategoriesAsync();
+        Task<IEnumerable<Category>> GetAllCategoriesAsync();
         Task<Category> AddCategoryAsync(Category category);
         Task<Category> UpdateCategoryAsync(Category category);
         Task DeleteCategoryAsync(int categoryId);
@@ -29,7 +29,7 @@ namespace Cart_It.Repository
                                  .FirstOrDefaultAsync(c => c.CategoryId == categoryId);
         }
 
-        public async Task<IEnumerable<Category>> GetCategoriesAsync()
+        public async Task<IEnumerable<Category>> GetAllCategoriesAsync()
         {
             return await _context.Categories.ToListAsync();
         }

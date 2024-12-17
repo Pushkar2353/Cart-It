@@ -12,16 +12,28 @@ namespace Cart_It.Services
         Task<SellerDTO> CreateSellerAsync(SellerDTO sellerDto);
         Task<SellerDTO> UpdateSellerAsync(int sellerId, SellerDTO sellerDto);
         Task<bool> DeleteSellerAsync(int sellerId);
+        Task<IEnumerable<OrderDTO>> GetSellerOrdersAsync(int sellerId);
+        Task<IEnumerable<ReviewDTO>> GetSellerProductReviewsAsync(int sellerId);
+        Task<IEnumerable<PaymentDTO>> GetSellerPaymentsAsync(int sellerId);
+
     }
 
     public class SellerService : ISellerService
     {
         private readonly ISellerRepository _sellerRepository;
+        private readonly IOrderRepository _orderRepository;
+        private readonly IReviewRepository _reviewRepository;
+        private readonly IPaymentRepository _paymentRepository;
         private readonly IMapper _mapper;
 
-        public SellerService(ISellerRepository sellerRepository, IMapper mapper)
+        public SellerService(ISellerRepository sellerRepository, IMapper mapper, IOrderRepository orderRepository,
+        IReviewRepository reviewRepository,
+        IPaymentRepository paymentRepository)
         {
             _sellerRepository = sellerRepository;
+            _orderRepository = orderRepository;
+            _reviewRepository = reviewRepository;
+            _paymentRepository = paymentRepository;
             _mapper = mapper;
         }
 
@@ -79,6 +91,21 @@ namespace Cart_It.Services
         public async Task<bool> DeleteSellerAsync(int sellerId)
         {
             return await _sellerRepository.DeleteSellerAsync(sellerId);
+        }
+
+        public async Task<IEnumerable<OrderDTO>> GetSellerOrdersAsync(int sellerId)
+        {
+            return await _orderRepository.GetOrdersBySellerIdAsync(sellerId);
+        }
+
+        public async Task<IEnumerable<ReviewDTO>> GetSellerProductReviewsAsync(int sellerId)
+        {
+            return await _reviewRepository.GetReviewsBySellerIdAsync(sellerId);
+        }
+
+        public async Task<IEnumerable<PaymentDTO>> GetSellerPaymentsAsync(int sellerId)
+        {
+            return await _paymentRepository.GetPaymentsBySellerIdAsync(sellerId);
         }
     }
 

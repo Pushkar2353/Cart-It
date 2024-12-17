@@ -36,38 +36,36 @@ namespace Cart_It.Controllers
 
             try
             {
-                // Fetch the product to get the ProductPrice
-                var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductId == orderDto.ProductId);
-                if (product == null)
+                // Ensure itemQuantity is at least 1 before validation
+                if (orderDto.ItemQuantity < 1)
                 {
-                    _logger.LogWarning("AddOrder: Product with ID {ProductId} not found.", orderDto.ProductId);
-                    return BadRequest($"Product with ID {orderDto.ProductId} not found.");
+                    orderDto.ItemQuantity = 1;  // Set itemQuantity to 1 if it's less than 1
                 }
 
-                // Set UnitPrice to ProductPrice from the product entity
-                orderDto.UnitPrice = product.ProductPrice;
-
-                // Validate TotalAmount consistency
-                var expectedTotalAmount = orderDto.UnitPrice * orderDto.ItemQuantity;
-                if (orderDto.TotalAmount != expectedTotalAmount)
+                // Now validate the model
+                if (!ModelState.IsValid)
                 {
-                    _logger.LogWarning("AddOrder: TotalAmount mismatch. Expected {ExpectedTotalAmount}, but received {ReceivedTotalAmount}.", expectedTotalAmount, orderDto.TotalAmount);
-                    return BadRequest($"TotalAmount mismatch. Expected: {expectedTotalAmount}");
+                    return BadRequest(ModelState); // Return validation errors if any
                 }
 
-                _logger.LogInformation("AddOrder: Adding a new order.");
+                // Delegate the adding of the order to the service
                 var order = await _orderService.AddOrderAsync(orderDto);
-                if (order == null)
-                    return BadRequest("Order could not be added");
-                var orderResponse = _mapper.Map<OrderDTO>(order);
+
+                // Map the created order back to OrderDTO for the response
+                var orderDtoResponse = _mapper.Map<OrderDTO>(order);
 
                 _logger.LogInformation("AddOrder: Successfully added order with ID {OrderId}.", order.OrderId);
-                return CreatedAtAction(nameof(GetOrder), new { id = order.OrderId }, orderDto);
+                return CreatedAtAction(nameof(GetOrder), new { id = order.OrderId }, orderDtoResponse);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning(ex, "AddOrder: Validation failed.");
+                return BadRequest(new { message = ex.Message });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "AddOrder: An error occurred while adding a new order.");
-                return BadRequest(new { message = "An error occurred while adding the order." });
+                _logger.LogError(ex, "AddOrder: An error occurred while adding the order.");
+                return StatusCode(500, new { message = "An error occurred while adding the order." });
             }
         }
 

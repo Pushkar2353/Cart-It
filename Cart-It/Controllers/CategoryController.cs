@@ -25,7 +25,7 @@ namespace Cart_It.Controllers
             {
                 _logger.LogInformation("Fetching all categories.");
 
-                var categories = await _categoryService.GetCategoriesAsync();
+                var categories = await _categoryService.GetAllCategoriesAsync();
 
                 _logger.LogInformation("Successfully fetched {Count} categories.", categories.Count());
                 return Ok(categories);

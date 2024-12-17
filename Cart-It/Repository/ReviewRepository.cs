@@ -12,6 +12,11 @@ namespace Cart_It.Repository
         Task<Review> UpdateReviewAsync(int reviewId, ReviewDTO reviewDto);
         Task<Review?> GetReviewByIdAsync(int reviewId);
         Task<IEnumerable<Review>> GetReviewsByProductIdAsync(int productId);
+        Task<IEnumerable<ReviewDTO>> GetReviewsByCustomerIdAsync(int customerId);
+        Task<IEnumerable<ReviewDTO>> GetReviewsBySellerIdAsync(int sellerId);
+        Task<IEnumerable<Review>> GetAllReviewsAsync();
+
+
     }
 
     public class ReviewRepository : IReviewRepository
@@ -79,6 +84,13 @@ namespace Cart_It.Repository
                                  .Include(r => r.Customers)
                                  .FirstOrDefaultAsync(r => r.ReviewId == reviewId);
         }
+        public async Task<IEnumerable<Review>> GetAllReviewsAsync()
+        {
+            return await _context.Reviews
+                .Include(r => r.Customers)
+                .Include(r => r.Products)
+                .ToListAsync();
+        }
 
         public async Task<IEnumerable<Review>> GetReviewsByProductIdAsync(int productId)
         {
@@ -86,6 +98,34 @@ namespace Cart_It.Repository
                                  .Where(r => r.ProductId == productId)
                                  .Include(r => r.Customers)
                                  .ToListAsync();
+        }
+
+        public async Task<IEnumerable<ReviewDTO>> GetReviewsByCustomerIdAsync(int customerId)
+        {
+            return await _context.Reviews
+                .Where(r => r.CustomerId == customerId)
+                .Select(r => new ReviewDTO
+                {
+                    ReviewId = r.ReviewId,
+                    ProductId = r.ProductId,
+                    Rating = r.Rating,
+                    ReviewText = r.ReviewText
+                }).ToListAsync();
+        }
+
+        public async Task<IEnumerable<ReviewDTO>> GetReviewsBySellerIdAsync(int sellerId)
+        {
+            return await _context.Reviews
+                .Where(r => r.Products.SellerId == sellerId)
+                .Select(r => new ReviewDTO
+                {
+                    ReviewId = r.ReviewId,
+                    ProductId = r.ProductId,
+                    Rating = r.Rating,
+                    ReviewText = r.ReviewText,
+                    ReviewDate = r.ReviewDate
+                })
+                .ToListAsync();
         }
     }
 }

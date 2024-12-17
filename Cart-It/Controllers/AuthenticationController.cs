@@ -25,6 +25,8 @@ namespace Cart_It.Controllers
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AuthenticationController> _logger;
+        private static Dictionary<string, (string Token, DateTime ExpirationDate)> _passwordResetTokens = new();
+
 
         public AuthenticationController(AppDbContext context, IConfiguration configuration, ILogger<AuthenticationController> logger)
         {
@@ -249,6 +251,152 @@ namespace Cart_It.Controllers
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+
+
+        [HttpPost("forgot-password")]
+        public IActionResult ForgotPassword([FromBody] ForgotPasswordRequest request)
+        {
+            try
+            {
+                _logger.LogInformation("Password reset requested for email: {Email}", request.Email);
+
+                // Get the user (Admin, Customer, or Seller) using the email
+                var user = GetUserByEmail(request.Email);
+
+                if (user == null)
+                {
+                    _logger.LogWarning("User not found for email: {Email}", request.Email);
+                    return NotFound(new { Message = "User not found." });
+                }
+
+                // Generate a password reset token (JWT)
+                var resetToken = GeneratePasswordResetToken(request.Email);
+
+                // Send the password reset token (you could log or send it via email)
+                _logger.LogInformation("Password reset token generated for email: {Email}", request.Email);
+
+                // Return the reset token
+                return Ok(new { Message = "Password reset token generated.", Token = resetToken });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while requesting a password reset for email: {Email}", request.Email);
+                return StatusCode(500, new { Message = "An error occurred while processing your request." });
+            }
+        }
+
+        // Generate the password reset JWT token
+        private string GeneratePasswordResetToken(string email)
+        {
+            var roles = new List<string> { "User" };  // You can adjust based on your user roles if needed
+
+            var secretKey = _configuration["Jwt:Key"];
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var claims = new List<Claim>
+    {
+        new Claim(JwtRegisteredClaimNames.Sub, email),
+        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+    };
+
+            var token = new JwtSecurityToken(
+                issuer: _configuration["Jwt:Issuer"],
+                audience: _configuration["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddHours(1),  // Token expiry time
+                signingCredentials: creds
+            );
+
+            var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+            return tokenString;
+        }
+
+        [HttpPost("reset-password")]
+        public IActionResult ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            try
+            {
+                _logger.LogInformation("Password reset for email: {Email}", request.Email);
+
+                // Validate the reset token
+                var isValidToken = ValidatePasswordResetToken(request.Token);
+                if (!isValidToken)
+                {
+                    _logger.LogWarning("Invalid or expired reset token for email: {Email}", request.Email);
+                    return BadRequest(new { Message = "Invalid or expired reset token." });
+                }
+
+                // Get the user by email
+                var user = GetUserByEmail(request.Email);
+                if (user == null)
+                {
+                    _logger.LogWarning("User not found for email: {Email}", request.Email);
+                    return NotFound(new { Message = "User not found." });
+                }
+
+                // Update the user's password
+                if (user is Administrator admin)
+                {
+                    admin.Password = HashPassword(request.NewPassword);
+                }
+                else if (user is Customer customer)
+                {
+                    customer.Password = HashPassword(request.NewPassword);
+                }
+                else if (user is Seller seller)
+                {
+                    seller.Password = HashPassword(request.NewPassword);
+                }
+
+                // Save changes to the database
+                _context.SaveChanges();
+
+                return Ok(new { Message = "Password reset successful." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while resetting the password for email: {Email}", request.Email);
+                return StatusCode(500, new { Message = "An error occurred while processing your request." });
+            }
+        }
+
+        // Validate the password reset token (JWT)
+        private bool ValidatePasswordResetToken(string token)
+        {
+            try
+            {
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]);
+                var parameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = _configuration["Jwt:Issuer"],
+                    ValidAudience = _configuration["Jwt:Audience"],
+                    IssuerSigningKey = new SymmetricSecurityKey(key)
+                };
+
+                // Validate the token
+                tokenHandler.ValidateToken(token, parameters, out _);
+                return true;  // Valid token
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error validating JWT token.");
+                return false;  // Invalid token
+            }
+        }
+
+        // Helper method to hash the password (you should use a secure hashing algorithm like bcrypt or PBKDF2)
+        private string HashPassword(string password)
+        {
+            // Implement your hashing logic here, e.g., using bcrypt or PBKDF2
+            return password;  // For now, returning the password as is for demonstration purposes
+        }
+
 
         /*
          

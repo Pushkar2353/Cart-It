@@ -73,6 +73,8 @@ namespace Cart_It
 
 
             builder.Services.AddScoped<TokenService>();
+            builder.Services.AddTransient<EmailService>();
+
 
             // Load configuration from appsettings.json
             builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
@@ -194,6 +196,7 @@ namespace Cart_It
             app.UseAuthentication(); // Authentication middleware must come first
             app.UseAuthorization();  // Authorization middleware must come after authentication
             app.UseCors("AllowAll");
+
 
             app.MapControllers();
 

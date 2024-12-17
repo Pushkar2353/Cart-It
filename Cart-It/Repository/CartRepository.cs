@@ -1,4 +1,5 @@
 ﻿using Cart_It.Data;
+using Cart_It.DTOs;
 using Cart_It.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,7 +10,7 @@ namespace Cart_It.Repository
         Task<Cart> GetCartByIdAsync(int cartId);
         Task<IEnumerable<Cart>> GetAllCartsAsync();
         Task AddCartAsync(Cart cart);
-        Task UpdateCartAsync(int cartId, Cart cart);
+        Task<CartDTO> UpdateCartAsync(CartDTO cartDto);
         Task DeleteCartAsync(int cartId);
     }
 
@@ -40,48 +41,33 @@ namespace Cart_It.Repository
 
         public async Task AddCartAsync(Cart cart)
         {
-            // Check if CustomerId exists in the Customers table
-            var customerExists = await _context.Customers.AnyAsync(c => c.CustomerId == cart.CustomerId);
-            if (!customerExists)
-            {
-                throw new InvalidOperationException("The specified customer does not exist.");
-            }
+            // Ensure cart is valid
+            if (cart == null)
+                throw new ArgumentNullException(nameof(cart), "Cart entity is null.");
 
-            // Check if ProductId exists in the Products table
-            var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductId == cart.ProductId);
-            if (product == null)
-            {
-                throw new InvalidOperationException("The specified product does not exist.");
-            }
-
-            // Set the Amount in Cart to the Product's Price (ProductPrice)
-            cart.Amount = product.ProductPrice;
-
+            // Add cart to database
             _context.Carts.Add(cart);
             await _context.SaveChangesAsync();
         }
 
-        public async Task UpdateCartAsync(int cartId, Cart cart)
+
+        public async Task<CartDTO> UpdateCartAsync(CartDTO cartDto)
         {
-            var existingCart = await GetCartByIdAsync(cartId);
-            if (existingCart != null)
+            var cart = await _context.Carts.FirstOrDefaultAsync(c => c.CartId == cartDto.CartId);
+            if (cart == null)
             {
-                existingCart.CustomerId = cart.CustomerId != 0 ? cart.CustomerId : existingCart.CustomerId;
-                existingCart.ProductId = cart.ProductId != 0 ? cart.ProductId : existingCart.ProductId;
-
-                // Ensure Amount is equal to the Product's Price (ProductPrice)
-                var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductId == cart.ProductId);
-                if (product != null)
-                {
-                    existingCart.Amount = product.ProductPrice;
-                }
-
-                existingCart.CartQuantity = cart.CartQuantity != 0 ? cart.CartQuantity : existingCart.CartQuantity;
-                existingCart.UpdatedDate = DateTime.Now;
-
-                _context.Carts.Update(existingCart);
-                await _context.SaveChangesAsync();
+                return null; // Cart not found
             }
+
+            // Update cart details
+            cart.Amount = cartDto.Amount;
+            cart.CartQuantity = cartDto.CartQuantity;
+
+            // Update cart in the database
+            _context.Carts.Update(cart);
+            await _context.SaveChangesAsync();
+
+            return cartDto; // Return updated cart DTO
         }
 
         public async Task DeleteCartAsync(int cartId)

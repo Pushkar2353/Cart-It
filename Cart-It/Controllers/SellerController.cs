@@ -169,6 +169,47 @@ namespace Cart_It.Controllers
             }
         }
 
+        [HttpGet("GetSellerDashboard/{sellerId}")]
+        public async Task<IActionResult> GetSellerDashboard(int sellerId)
+        {
+            try
+            {
+                _logger.LogInformation("Fetching consolidated dashboard details for seller with ID {SellerId}", sellerId);
+
+                // Fetch basic seller information (e.g., name, email, store name)
+                var seller = await _sellerService.GetSellerByIdAsync(sellerId);
+                if (seller == null)
+                {
+                    _logger.LogWarning("Seller with ID {SellerId} not found", sellerId);
+                    return NotFound(new { Message = $"Seller with ID {sellerId} not found." });
+                }
+
+                // Fetch orders, reviews, and payment information linked to the seller's products
+                var orders = await _sellerService.GetSellerOrdersAsync(sellerId);
+                var reviews = await _sellerService.GetSellerProductReviewsAsync(sellerId);
+                var payments = await _sellerService.GetSellerPaymentsAsync(sellerId);
+
+                // Combine all data into a consolidated response
+                var dashboardData = new
+                {
+                    Seller = seller,
+                    Orders = orders,
+                    Reviews = reviews,
+                    Payments = payments
+                };
+
+                _logger.LogInformation("Successfully fetched consolidated dashboard details for seller with ID {SellerId}", sellerId);
+
+                return Ok(new { Message = "Seller dashboard details fetched successfully.", Data = dashboardData });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while fetching dashboard details for seller with ID {SellerId}", sellerId);
+                return StatusCode(500, new { Message = ex.Message });
+            }
+        }
+
+
         /*
 
         [HttpGet("GetCategories")]

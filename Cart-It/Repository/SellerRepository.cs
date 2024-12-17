@@ -1,4 +1,5 @@
 ﻿using Cart_It.Data;
+using Cart_It.DTOs;
 using Cart_It.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -75,6 +76,64 @@ namespace Cart_It.Repository
             await _context.SaveChangesAsync();
             return true;
         }
+
+        public async Task<IEnumerable<ProductDTO>> GetProductsBySellerIdAsync(int sellerId)
+        {
+            var products = await _context.Products
+                .Where(p => p.SellerId == sellerId)
+                .ToListAsync();
+
+            return products.Select(p => new ProductDTO
+            {
+                ProductId = p.ProductId,
+                ProductName = p.ProductName,
+                SellerId = p.SellerId
+            });
+        }
+
+        public async Task<IEnumerable<ReviewDTO>> GetReviewsBySellerIdAsync(int sellerId)
+        {
+            return await _context.Reviews
+                .Where(r => r.Products.SellerId == sellerId)
+                .Select(r => new ReviewDTO
+                {
+                    ReviewId = r.ReviewId,
+                    ProductId = r.ProductId,
+                    Rating = r.Rating,
+                    ReviewText = r.ReviewText,
+                    ReviewDate = r.ReviewDate
+                })
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<PaymentDTO>> GetPaymentsBySellerIdAsync(int sellerId)
+        {
+            return await _context.Payments
+                .Where(p => p.Orders.Products.Any(prod => prod.SellerId == sellerId))  // Check if any product in the order matches the sellerId
+                .Select(p => new PaymentDTO
+                {
+                    PaymentId = p.PaymentId,
+                    OrderId = p.OrderId,  // Assuming Payment has an OrderId property to reference the associated order
+                    PaymentDate = p.PaymentDate,
+                })
+                .ToListAsync();
+        }
+
+
+        public async Task<IEnumerable<OrderDTO>> GetOrdersBySellerIdAsync(int sellerId)
+        {
+            return await _context.Orders
+                .Where(o => o.Products.Any(p => p.SellerId == sellerId))  // Check if any product in the order matches the sellerId
+                .Select(o => new OrderDTO
+                {
+                    OrderId = o.OrderId,
+                    ProductId = o.ProductId,
+                    CustomerId = o.CustomerId,
+                    OrderDate = o.OrderDate,
+                })
+                .ToListAsync();
+        }
+
     }
 
 }

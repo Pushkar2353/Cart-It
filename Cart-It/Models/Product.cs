@@ -10,6 +10,8 @@ namespace Cart_It.Models
             Carts = new HashSet<Cart>();
             Reviews = new HashSet<Review>();
             ProductsInventory = new HashSet<ProductInventory>();
+            Orders = new HashSet<Order>();
+
         }
 
         public int ProductId { get; set; }
@@ -19,11 +21,7 @@ namespace Cart_It.Models
         public int? ProductStock { get; set; }
         public int CategoryId { get; set; }
         public int SellerId { get; set; }
-        public string ProductUrl { get; set; } = null!;
-
-        [NotMapped]
-        public IFormFile? ProductImage { get; set; }
-        public string ProductImagePath { get; set; } = null!;
+        public string ProductImageUrl { get; set; } = null!;
 
         public virtual Category? Categories { get; set; } = null!;
         public virtual Seller? Sellers { get; set; } = null!;

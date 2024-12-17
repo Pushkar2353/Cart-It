@@ -85,11 +85,10 @@ namespace Cart_It.Data
                 entity.Property(c => c.PinCode)
                       .HasMaxLength(10);
 
-                // Relationships
-                entity.HasOne(c => c.Carts) // Customer has one Cart
-          .WithOne(cart => cart.Customers) // Cart has one Customer
-          .HasForeignKey<Cart>(cart => cart.CustomerId) // Foreign key in Cart
-          .OnDelete(DeleteBehavior.Cascade);
+                entity.HasMany(c => c.Carts)
+                      .WithOne(cart => cart.Customers)
+                      .HasForeignKey(cart => cart.CustomerId)
+                      .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasMany(c => c.Orders)
                       .WithOne(order => order.Customers)
@@ -245,8 +244,8 @@ namespace Cart_It.Data
                 entity.Property(p => p.ProductPrice)
                       .HasColumnType("decimal(18, 2)"); // Ensure proper decimal precision
 
-                entity.Property(p => p.ProductImagePath)
-                      .IsRequired(); // Ensure ProductImagePath is not null
+                entity.Property(p => p.ProductImageUrl)
+                      .IsRequired();
 
                 // Set up relationships
                 entity.HasOne(p => p.Categories)
@@ -351,12 +350,11 @@ namespace Cart_It.Data
                       .HasForeignKey(c => c.ProductId)
                       .OnDelete(DeleteBehavior.Cascade); // Cascade delete if Product is deleted
 
-                entity.HasOne(cart => cart.Customers) // Cart has one Customer
-          .WithOne(customer => customer.Carts) // Customer has one Cart
-          .HasForeignKey<Cart>(cart => cart.CustomerId) // Foreign key in Cart
-          .OnDelete(DeleteBehavior.Cascade); // Cascade delete if Customer is deleted
+                entity.HasOne(cart => cart.Customers)
+                      .WithMany(customer => customer.Carts)
+                      .HasForeignKey(cart => cart.CustomerId)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
-
 
             // Configure the Order entity
             modelBuilder.Entity<Order>(entity =>
@@ -369,7 +367,9 @@ namespace Cart_It.Data
                       .ValueGeneratedOnAdd(); // Auto-increment for primary key
 
                 entity.Property(o => o.ItemQuantity)
-                      .IsRequired(false);
+                      .IsRequired(false)
+                      .HasDefaultValue(1); // Set default value if it's null
+
 
                 entity.Property(o => o.UnitPrice)
                       .HasColumnType("decimal(18, 2)") // Precision for monetary values
@@ -419,83 +419,83 @@ namespace Cart_It.Data
             });
 
 
-            // Payment entity configuration
-            modelBuilder.Entity<Payment>(entity =>
-            {
-                // Primary Key
-                entity.HasKey(p => p.PaymentId);
+                // Payment entity configuration
+                modelBuilder.Entity<Payment>(entity =>
+                {
+                    // Primary Key
+                    entity.HasKey(p => p.PaymentId);
 
-                entity.Property(p => p.PaymentId)
-                      .ValueGeneratedOnAdd();
+                    entity.Property(p => p.PaymentId)
+                          .ValueGeneratedOnAdd();
 
-                // Configure properties
-                entity.Property(p => p.AmountToPay)
-                      .HasColumnType("decimal(18,2)")
-                      .IsRequired();
+                    // Configure properties
+                    entity.Property(p => p.AmountToPay)
+                          .HasColumnType("decimal(18,2)")
+                          .IsRequired();
 
-                entity.Property(p => p.PaymentDate)
-                      .HasDefaultValueSql("GETDATE()");
+                    entity.Property(p => p.PaymentDate)
+                          .HasDefaultValueSql("GETDATE()");
 
-                // Configure PaymentMethod and PaymentStatus enum mapping
-                entity.Property(p => p.PaymentMethod)
-                      .IsRequired()
-                      .HasMaxLength(15);
+                    // Configure PaymentMethod and PaymentStatus enum mapping
+                    entity.Property(p => p.PaymentMethod)
+                          .IsRequired()
+                          .HasMaxLength(15);
 
-                entity.Property(p => p.PaymentStatus)
-                      .IsRequired()
-                      .HasMaxLength(15);
+                    entity.Property(p => p.PaymentStatus)
+                          .IsRequired()
+                          .HasMaxLength(15);
 
-                // Configure relationships
-                // One-to-Many relationship with Order (one Payment can be for one Order)
-                entity.HasOne(p => p.Orders)
-                      .WithMany(o => o.Payments)
-                      .HasForeignKey(p => p.OrderId)
-                      .OnDelete(DeleteBehavior.Cascade);
+                    // Configure relationships
+                    // One-to-Many relationship with Order (one Payment can be for one Order)
+                    entity.HasOne(p => p.Orders)
+                          .WithMany(o => o.Payments)
+                          .HasForeignKey(p => p.OrderId)
+                          .OnDelete(DeleteBehavior.Cascade);
 
-                // Many-to-One relationship with Customer (a Payment belongs to one Customer)
-                entity.HasOne(p => p.Customers)
-                      .WithMany(c => c.Payments)
-                      .HasForeignKey(p => p.CustomerId)
-                      .OnDelete(DeleteBehavior.Restrict); // Restrict deletion if there are payments for a customer
-            });
-
-
-            // Review entity configuration
-            modelBuilder.Entity<Review>(entity =>
-            {
-                // Primary Key
-                entity.HasKey(r => r.ReviewId);
-
-                entity.Property(r => r.ReviewId)
-                      .ValueGeneratedOnAdd();
+                    // Many-to-One relationship with Customer (a Payment belongs to one Customer)
+                    entity.HasOne(p => p.Customers)
+                          .WithMany(c => c.Payments)
+                          .HasForeignKey(p => p.CustomerId)
+                          .OnDelete(DeleteBehavior.Restrict); // Restrict deletion if there are payments for a customer
+                });
 
 
-                // Configure properties
-                entity.Property(r => r.Rating)
-                      .IsRequired();
-                entity.HasCheckConstraint("CK_Review_Rating", "[Rating] >= 1 AND [Rating] <= 5");
+                // Review entity configuration
+                modelBuilder.Entity<Review>(entity =>
+                {
+                    // Primary Key
+                    entity.HasKey(r => r.ReviewId);
 
-                entity.Property(r => r.ReviewText)
-                      .HasMaxLength(500) // Limiting the length of review text
-                      .IsRequired();
+                    entity.Property(r => r.ReviewId)
+                          .ValueGeneratedOnAdd();
 
-                entity.Property(r => r.ReviewDate)
-                      .HasDefaultValueSql("GETDATE()");
 
-                // Configure relationships
-                // Many-to-One relationship with Product (many reviews can be for one product)
-                entity.HasOne(r => r.Products)
-                      .WithMany(p => p.Reviews)
-                      .HasForeignKey(r => r.ProductId)
-                      .OnDelete(DeleteBehavior.Restrict); // Prevent deletion of product if reviews exist
+                    // Configure properties
+                    entity.Property(r => r.Rating)
+                          .IsRequired();
+                    entity.HasCheckConstraint("CK_Review_Rating", "[Rating] >= 1 AND [Rating] <= 5");
 
-                // Many-to-One relationship with Customer (many reviews can be written by one customer)
-                entity.HasOne(r => r.Customers)
-                      .WithMany(c => c.Reviews)
-                      .HasForeignKey(r => r.CustomerId)
-                      .OnDelete(DeleteBehavior.Restrict); // Prevent deletion of customer if reviews exist
-            });
-        }
+                    entity.Property(r => r.ReviewText)
+                          .HasMaxLength(500) // Limiting the length of review text
+                          .IsRequired();
+
+                    entity.Property(r => r.ReviewDate)
+                          .HasDefaultValueSql("GETDATE()");
+
+                    // Configure relationships
+                    // Many-to-One relationship with Product (many reviews can be for one product)
+                    entity.HasOne(r => r.Products)
+                          .WithMany(p => p.Reviews)
+                          .HasForeignKey(r => r.ProductId)
+                          .OnDelete(DeleteBehavior.Restrict); // Prevent deletion of product if reviews exist
+
+                    // Many-to-One relationship with Customer (many reviews can be written by one customer)
+                    entity.HasOne(r => r.Customers)
+                          .WithMany(c => c.Reviews)
+                          .HasForeignKey(r => r.CustomerId)
+                          .OnDelete(DeleteBehavior.Restrict); // Prevent deletion of customer if reviews exist
+                });
+            }
 
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

@@ -82,11 +82,9 @@ namespace Cart_It.Services
             }
 
             existingProduct.ProductStock = productDto.ProductStock ?? existingProduct.ProductStock;
-            existingProduct.ProductUrl = productDto.ProductUrl ?? existingProduct.ProductUrl;
+            existingProduct.ProductImageUrl = productDto.ProductImageUrl ?? existingProduct.ProductImageUrl;
             existingProduct.CategoryId = productDto.CategoryId ?? existingProduct.CategoryId;
             existingProduct.SellerId = productDto.SellerId ?? existingProduct.SellerId;
-            existingProduct.ProductImagePath = productDto.ProductImagePath ?? existingProduct.ProductImagePath;
-
             var updatedProduct = await _productRepository.UpdateProductAsync(existingProduct);
             return _mapper.Map<ProductDTO>(updatedProduct);
         }

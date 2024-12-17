@@ -12,8 +12,10 @@ namespace Cart_It.Services
         Task<CartDTO> GetCartByIdAsync(int cartId);
         Task<IEnumerable<CartDTO>> GetAllCartsAsync();
         Task<CartDTO> AddCartAsync(CartDTO cartDto);
-        Task UpdateCartAsync(int cartId, CartDTO cartDto);
+        Task<CartDTO> UpdateCartAsync(int productId, CartDTO cartDto);
         Task DeleteCartAsync(int cartId);
+        Task<IEnumerable<CartDTO>> GetCartsByCustomerIdAsync(int customerId);
+
     }
 
     public class CartService : ICartService
@@ -45,45 +47,49 @@ namespace Cart_It.Services
 
         public async Task<CartDTO> AddCartAsync(CartDTO cartDto)
         {
-            try
-            {
-                // Map CartDTO to Cart entity
-                var cart = _mapper.Map<Cart>(cartDto);
+            // Validate input
+            if (cartDto == null)
+                throw new ArgumentNullException(nameof(cartDto), "Cart data is null.");
 
-                // Fetch the product and set the Amount to the ProductPrice
-                var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductId == cart.ProductId);
-                if (product != null)
-                {
-                    cart.Amount = product.ProductPrice;
-                }
+            // Map CartDTO to Cart entity
+            var cart = _mapper.Map<Cart>(cartDto);
 
-                // Add the cart to the repository
-                await _cartRepository.AddCartAsync(cart);
+            // Fetch product and validate
+            var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductId == cart.ProductId);
+            if (product == null)
+                throw new InvalidOperationException("The specified product does not exist.");
 
-                // After saving the cart, return the cartDTO with CartId and Amount
-                var createdCartDto = _mapper.Map<CartDTO>(cart);  // Map the saved cart entity back to CartDTO
-                return createdCartDto;  // Return the CartDTO with the CartId
-            }
-            catch (InvalidOperationException ex)
-            {
-                // Log or handle the error properly
-                throw new Exception($"Error adding cart: {ex.Message}");
-            }
+            // Fetch customer and validate
+            var customerExists = await _context.Customers.AnyAsync(c => c.CustomerId == cart.CustomerId);
+            if (!customerExists)
+                throw new InvalidOperationException("The specified customer does not exist.");
+
+            // Set the amount based on ProductPrice
+            cart.Amount = product.ProductPrice;
+
+            // Save cart to the repository
+            await _cartRepository.AddCartAsync(cart);
+
+            // Map the saved entity back to CartDTO
+            var createdCartDto = _mapper.Map<CartDTO>(cart);
+            return createdCartDto;
         }
 
 
-        public async Task UpdateCartAsync(int cartId, CartDTO cartDto)
+        public async Task<CartDTO> UpdateCartAsync(int productId, CartDTO cartDto)
         {
-            var cart = _mapper.Map<Cart>(cartDto);
-
-            // Fetch the product and set the Amount to the ProductPrice
-            var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductId == cart.ProductId);
-            if (product != null)
+            // Fetch the product to get the ProductPrice
+            var product = await _productRepository.GetProductByIdAsync(productId);
+            if (product == null)
             {
-                cart.Amount = product.ProductPrice;
+                return null; // Product not found
             }
 
-            await _cartRepository.UpdateCartAsync(cartId, cart);
+            // Update the cart DTO with product price
+            cartDto.Amount = product.ProductPrice;
+
+            // Update the cart with the new details
+            return await _cartRepository.UpdateCartAsync(cartDto);
         }
 
 
@@ -91,6 +97,26 @@ namespace Cart_It.Services
         {
             await _cartRepository.DeleteCartAsync(cartId);
         }
+
+        public async Task<IEnumerable<CartDTO>> GetCartsByCustomerIdAsync(int customerId)
+        {
+            var carts = await _context.Carts
+                .Where(cart => cart.CustomerId == customerId)
+                .ToListAsync();
+
+            // Map to DTOs if needed
+            return carts.Select(cart => new CartDTO
+            {
+                CartId = cart.CartId,
+                CustomerId = cart.CustomerId,
+                ProductId = cart.ProductId,
+                CartQuantity = cart.CartQuantity,
+                Amount = cart.Amount,
+                CreatedDate = cart.CreatedDate,
+                UpdatedDate = cart.UpdatedDate
+            });
+        }
+
     }
 
 }

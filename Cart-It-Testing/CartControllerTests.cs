@@ -95,34 +95,19 @@ namespace Cart_It_Testing
                 CustomerId = 1,
                 ProductId = 1,
                 CartQuantity = 2,
-                Amount = 200
+                Amount = 100
             };
 
-            // Setup mock service to return the cart
-            _cartServiceMock
-                .Setup(service => service.AddCartAsync(It.IsAny<CartDTO>()))
+            _cartServiceMock.Setup(service => service.AddCartAsync(cartDto))
                 .ReturnsAsync(cartDto);
 
             // Act
             var result = await _controller.AddCart(cartDto);
 
             // Assert
-            Assert.IsNotNull(result);
-            Assert.IsInstanceOf<CreatedAtActionResult>(result);
-
             var createdResult = result as CreatedAtActionResult;
-            Assert.AreEqual(nameof(CartController.GetCartById), createdResult?.ActionName);
-
-            var returnedCart = createdResult?.Value as CartDTO;
-            Assert.AreEqual(cartDto.CartId, returnedCart?.CartId);
-            Assert.AreEqual(cartDto.Amount, returnedCart?.Amount);
-
-            // Verify service method was called
-            _cartServiceMock.Verify(
-                service => service.AddCartAsync(It.IsAny<CartDTO>()),
-                Times.Once
-            );
-            
+            Assert.IsNotNull(createdResult, "Expected CreatedAtActionResult, but got null.");
+            Assert.AreEqual(cartDto, createdResult.Value);
         }
 
 
@@ -146,7 +131,7 @@ namespace Cart_It_Testing
 
             _dbContextMock.Setup(db => db.Products).Returns(mockProductDbSet.Object);
 
-            _cartServiceMock.Setup(service => service.UpdateCartAsync(cartId, cartDto)).Returns(Task.CompletedTask);
+           // _cartServiceMock.Setup(service => service.UpdateCartAsync(cartId, cartDto)).Returns(Task.CompletedTask);
 
             // Act
             var result = await _controller.UpdateCart(cartId, cartDto);

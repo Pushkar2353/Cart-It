@@ -66,7 +66,7 @@ namespace Cart_It.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddProduct([FromForm] ProductDTO productDto)
+        public async Task<IActionResult> AddProduct([FromBody] ProductDTO productDto)
         {
             try
             {
@@ -74,13 +74,6 @@ namespace Cart_It.Controllers
                 {
                     _logger.LogWarning("Received null data for product creation.");
                     return BadRequest(new { message = "Invalid product data." });
-                }
-
-                if (productDto.ProductImage != null)
-                {
-                    // Save the product image and get the saved image path
-                    var imagePath = await SaveProductImageAsync(productDto.ProductImage);
-                    productDto.ProductImagePath = imagePath;
                 }
 
                 _logger.LogInformation("Adding a new product with name {ProductName}.", productDto.ProductName);
@@ -99,7 +92,7 @@ namespace Cart_It.Controllers
 
         // Update product
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateProduct(int id, [FromForm] ProductDTO productDto)
+        public async Task<IActionResult> UpdateProduct(int id, [FromBody] ProductDTO productDto)
         {
             try
             {
@@ -107,13 +100,6 @@ namespace Cart_It.Controllers
                 {
                     _logger.LogWarning("Received null data for updating product with ID {ProductId}.", id);
                     return BadRequest(new { message = "Invalid product data." });
-                }
-
-                if (productDto.ProductImage != null)
-                {
-                    // Save the new product image and get the saved image path
-                    var imagePath = await SaveProductImageAsync(productDto.ProductImage);
-                    productDto.ProductImagePath = imagePath;
                 }
 
                 _logger.LogInformation("Updating product with ID {ProductId}.", id);
@@ -156,17 +142,6 @@ namespace Cart_It.Controllers
                     return NotFound(new { message = $"Product not found" });
                 }
 
-                // Delete the image from server if it exists
-                if (!string.IsNullOrEmpty(product.ProductImagePath))
-                {
-                    var imagePath = Path.Combine(_webHostEnvironment.WebRootPath, product.ProductImagePath);
-                    if (System.IO.File.Exists(imagePath))
-                    {
-                        System.IO.File.Delete(imagePath);
-                        _logger.LogInformation("Product image for ID {ProductId} deleted from server.", id);
-                    }
-                }
-
                 await _productService.DeleteProductAsync(id);
 
                 _logger.LogInformation("Product with ID {ProductId} deleted successfully.", id);
@@ -177,29 +152,6 @@ namespace Cart_It.Controllers
                 _logger.LogError($"An error occurred while deleting the product: {ex.Message}");
                 return StatusCode(500, new { message = "An error occurred while processing your request" });
             }
-        }
-
-        // Method to save the image file
-        private async Task<string> SaveProductImageAsync(IFormFile productImage)
-        {
-            if (productImage == null) return string.Empty;
-
-            var fileName = Guid.NewGuid().ToString() + Path.GetExtension(productImage.FileName);
-            var filePath = Path.Combine(_webHostEnvironment.WebRootPath, "images", fileName);
-
-            // Ensure the directory exists
-            var directory = Path.GetDirectoryName(filePath);
-            if (!Directory.Exists(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
-
-            using (var fileStream = new FileStream(filePath, FileMode.Create))
-            {
-                await productImage.CopyToAsync(fileStream);
-            }
-
-            return "images/" + fileName; // Return the relative path
         }
 
         [HttpGet("category/{categoryId}")]

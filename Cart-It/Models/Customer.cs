@@ -9,6 +9,7 @@ namespace Cart_It.Models
             Orders = new HashSet<Order>();
             Payments = new HashSet<Payment>();
             Reviews = new HashSet<Review>();
+            Carts = new HashSet<Cart>();
         }
         public int CustomerId { get; set; }
         public string FirstName { get; set; } = string.Empty;
@@ -26,7 +27,7 @@ namespace Cart_It.Models
         public string Country { get; set; } = string.Empty;
         public string PinCode { get; set; } = string.Empty;
 
-        public virtual Cart? Carts { get; set; } // One-to-one navigation property
+        public virtual ICollection<Cart>? Carts { get; set; }
         public virtual ICollection<Order>? Orders { get; set; }
         public virtual ICollection<Payment>? Payments { get; set; }
         public virtual ICollection<Review>? Reviews { get; set; }

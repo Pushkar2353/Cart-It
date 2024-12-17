@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Cart_It.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20241211150840_DbFirst")]
-    partial class DbFirst
+    [Migration("20241217121018_DbThird")]
+    partial class DbThird
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -80,8 +80,7 @@ namespace Cart_It.Migrations
 
                     b.HasKey("CartId");
 
-                    b.HasIndex("CustomerId")
-                        .IsUnique();
+                    b.HasIndex("CustomerId");
 
                     b.HasIndex("ProductId");
 
@@ -223,7 +222,9 @@ namespace Cart_It.Migrations
                         .HasColumnType("int");
 
                     b.Property<int?>("ItemQuantity")
-                        .HasColumnType("int");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(1);
 
                     b.Property<DateTime>("OrderDate")
                         .ValueGeneratedOnAdd()
@@ -312,7 +313,7 @@ namespace Cart_It.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
-                    b.Property<string>("ProductImagePath")
+                    b.Property<string>("ProductImageUrl")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -326,10 +327,6 @@ namespace Cart_It.Migrations
 
                     b.Property<int?>("ProductStock")
                         .HasColumnType("int");
-
-                    b.Property<string>("ProductUrl")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("SellerId")
                         .HasColumnType("int");
@@ -527,8 +524,8 @@ namespace Cart_It.Migrations
             modelBuilder.Entity("Cart_It.Models.Cart", b =>
                 {
                     b.HasOne("Cart_It.Models.Customer", "Customers")
-                        .WithOne("Carts")
-                        .HasForeignKey("Cart_It.Models.Cart", "CustomerId")
+                        .WithMany("Carts")
+                        .HasForeignKey("CustomerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

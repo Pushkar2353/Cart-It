@@ -7,8 +7,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Cart_It.Controllers
 {
-    [ApiController]
     [Route("api/[controller]")]
+    [ApiController]
     public class CartController : ControllerBase
     {
         private readonly ICartService _cartService;
@@ -52,77 +52,52 @@ namespace Cart_It.Controllers
         [HttpPost]
         public async Task<IActionResult> AddCart([FromBody] CartDTO cartDto)
         {
-            if (cartDto == null)
-            {
-                _logger.LogWarning("Received null cart data.");
-                return BadRequest(new { message = "Cart data is null." });
-            }
-
             try
             {
-                _logger.LogInformation("Checking if customer with ID {CustomerId} exists.", cartDto.CustomerId);
-                var customerExists = await _context.Customers.AnyAsync(c => c.CustomerId == cartDto.CustomerId);
-                if (!customerExists)
-                {
-                    _logger.LogWarning("Customer with ID {CustomerId} does not exist.", cartDto.CustomerId);
-                    return BadRequest(new { message = "Customer does not exist." });
-                }
+                // Validate request body
+                if (cartDto == null)
+                    return BadRequest(new { message = "Cart data is required." });
 
-                _logger.LogInformation("Checking if product with ID {ProductId} exists.", cartDto.ProductId);
-                var productExists = await _context.Products.AnyAsync(p => p.ProductId == cartDto.ProductId);
-                if (!productExists)
-                {
-                    _logger.LogWarning("Product with ID {ProductId} does not exist.", cartDto.ProductId);
-                    return BadRequest(new { message = "Product does not exist." });
-                }
+                // Call service to add cart
+                var createdCart = await _cartService.AddCartAsync(cartDto);
 
-                // Fetch product to get the ProductPrice
-                var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductId == cartDto.ProductId);
-                if (product != null)
-                {
-                    cartDto.Amount = product.ProductPrice;  // Set Amount to the ProductPrice
-                }
-
-                _logger.LogInformation("Adding cart for customer ID {CustomerId} and product ID {ProductId}.", cartDto.CustomerId, cartDto.ProductId);
-                var cart = await _cartService.AddCartAsync(cartDto);
-
-                _logger.LogInformation("Successfully added cart with ID {CartId}.", cartDto.CartId);
-                return CreatedAtAction(nameof(GetCartById),new { cartId = cartDto.CartId },cart);
+                // Return 201 Created response
+                return CreatedAtAction(nameof(AddCart), new { id = createdCart.CartId }, createdCart);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while adding cart.");
-                return StatusCode(500, new { message = "An error occurred while adding the cart." });
+                return StatusCode(500, new { message = $"An error occurred: {ex.Message}" });
             }
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateCart(int id, [FromBody] CartDTO cartDto)
+        [HttpPut("{productId}")]
+        public async Task<IActionResult> UpdateCart(int productId, [FromBody] CartDTO cartDto)
         {
-            if (cartDto == null || id != cartDto.CartId)
+            if (cartDto == null || productId != cartDto.ProductId)
             {
-                _logger.LogWarning("Invalid data for updating cart with ID {CartId}.", id);
+                _logger.LogWarning("Invalid data for updating cart with ProductId {ProductId}.", productId);
                 return BadRequest(new { message = "Invalid cart data." });
             }
 
             try
             {
-                // Fetch product to get the ProductPrice
-                var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductId == cartDto.ProductId);
-                if (product != null)
+                // Proceed with updating the cart using product ID
+                var result = await _cartService.UpdateCartAsync(productId, cartDto);
+                if (result == null)
                 {
-                    cartDto.Amount = product.ProductPrice;  // Set Amount to the ProductPrice
+                    return NotFound(new { message = "Cart not found for the given product." });
                 }
-
-                // Proceed with updating the cart
-                await _cartService.UpdateCartAsync(id, cartDto);
 
                 // Return NoContentResult (204 No Content) after successful update
                 return NoContent(); // This ensures a 204 status code
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while updating cart with ID {CartId}.", id);
+                _logger.LogError(ex, "Error occurred while updating cart with ProductId {ProductId}.", productId);
                 return StatusCode(500, new { message = "An error occurred while updating the cart." });
             }
         }
@@ -145,5 +120,40 @@ namespace Cart_It.Controllers
                 return StatusCode(500, new { message = "An error occurred while deleting the cart." });
             }
         }
+
+        [HttpGet("customer/{customerId}")]
+        public async Task<IActionResult> GetCartsByCustomerId(int customerId)
+        {
+            _logger.LogInformation("Fetching carts for customer ID {CustomerId}.", customerId);
+
+            try
+            {
+                // Check if the customer exists
+                var customerExists = await _context.Customers.AnyAsync(c => c.CustomerId == customerId);
+                if (!customerExists)
+                {
+                    _logger.LogWarning("Customer with ID {CustomerId} does not exist.", customerId);
+                    return NotFound(new { message = "Customer not found." });
+                }
+
+                // Fetch carts for the customer
+                var carts = await _cartService.GetCartsByCustomerIdAsync(customerId);
+
+                if (carts == null || !carts.Any())
+                {
+                    _logger.LogWarning("No carts found for customer ID {CustomerId}.", customerId);
+                    return NotFound(new { message = "No carts found for this customer." });
+                }
+
+                _logger.LogInformation("Successfully fetched {Count} carts for customer ID {CustomerId}.", carts.Count(), customerId);
+                return Ok(carts);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while fetching carts for customer ID {CustomerId}.", customerId);
+                return StatusCode(500, new { message = "An error occurred while fetching carts." });
+            }
+        }
+
     }
 }

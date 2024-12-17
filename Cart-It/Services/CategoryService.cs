@@ -8,7 +8,7 @@ namespace Cart_It.Services
     public interface ICategoryService
     {
         Task<CategoryDTO> GetCategoryByIdAsync(int categoryId);
-        Task<IEnumerable<CategoryDTO>> GetCategoriesAsync();
+        Task<IEnumerable<CategoryDTO>> GetAllCategoriesAsync();
         Task<CategoryDTO> AddCategoryAsync(CategoryDTO categoryDto);
         Task<CategoryDTO> UpdateCategoryAsync(int categoryId, CategoryDTO categoryDto);
         Task DeleteCategoryAsync(int categoryId);
@@ -31,9 +31,9 @@ namespace Cart_It.Services
             return _mapper.Map<CategoryDTO>(category);
         }
 
-        public async Task<IEnumerable<CategoryDTO>> GetCategoriesAsync()
+        public async Task<IEnumerable<CategoryDTO>> GetAllCategoriesAsync()
         {
-            var categories = await _categoryRepository.GetCategoriesAsync();
+            var categories = await _categoryRepository.GetAllCategoriesAsync();
             return _mapper.Map<IEnumerable<CategoryDTO>>(categories);
         }
 

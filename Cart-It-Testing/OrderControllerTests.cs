@@ -46,45 +46,27 @@ namespace Cart_It_Testing
                 CustomerId = 1,
                 ProductId = 1,
                 ItemQuantity = 2,
-                UnitPrice = 100, // Price should be set by the mocked Product
+                UnitPrice = 100, // Price will be set by the mocked Product
                 ShippingAddress = "123 Test St",
                 OrderDate = DateTime.Now,
                 OrderStatus = "Pending",
             };
 
-            // Create a mock Product that is returned by the _context.Products DbSet
-            var product = new Product { ProductId = 1, ProductPrice = 100 };
-
-            // Mock the DbContext's Products property and simulate a successful query
-            var mockProductDbSet = new Mock<DbSet<Product>>();
-            mockProductDbSet.As<IQueryable<Product>>().Setup(m => m.Provider)
-                .Returns(new TestAsyncQueryProvider<Product>(new List<Product> { product }.AsQueryable().Provider));
-            mockProductDbSet.As<IQueryable<Product>>().Setup(m => m.Expression)
-                .Returns(new List<Product> { product }.AsQueryable().Expression);
-            mockProductDbSet.As<IQueryable<Product>>().Setup(m => m.ElementType)
-                .Returns(new List<Product> { product }.AsQueryable().ElementType);
-            mockProductDbSet.As<IQueryable<Product>>().Setup(m => m.GetEnumerator())
-                .Returns(new List<Product> { product }.AsQueryable().GetEnumerator());
-
-            _dbContextMock.Setup(db => db.Products).Returns(mockProductDbSet.Object);
-
-            // Mock the _orderService.AddOrderAsync to return an order
-            var order = new Order { OrderId = 1, CustomerId = 1, ProductId = 1, OrderDate = DateTime.Now, OrderStatus = "Pending", TotalAmount = 200 };
-            _orderServiceMock.Setup(service => service.AddOrderAsync(It.IsAny<OrderDTO>())).ReturnsAsync(order);
-
-            // Mock AutoMapper to return the DTO
-            var orderDtoMapped = new OrderDTO
+            var order = new Order
             {
                 OrderId = 1,
                 CustomerId = 1,
                 ProductId = 1,
-                ItemQuantity = 2,
-                UnitPrice = 100,
-                ShippingAddress = "123 Test St",
                 OrderDate = DateTime.Now,
                 OrderStatus = "Pending",
+                TotalAmount = 200
             };
-            _mapperMock.Setup(m => m.Map<OrderDTO>(It.IsAny<Order>())).Returns(orderDtoMapped);
+
+            // Mock the service to return an order when AddOrderAsync is called
+            _orderServiceMock.Setup(service => service.AddOrderAsync(orderDto)).ReturnsAsync(order);
+
+            // Mock AutoMapper to return the DTO after mapping
+            _mapperMock.Setup(m => m.Map<OrderDTO>(It.IsAny<Order>())).Returns(orderDto);
 
             // Act
             var result = await _controller.AddOrder(orderDto);
@@ -104,7 +86,6 @@ namespace Cart_It_Testing
             Assert.AreEqual(orderDto.OrderId, returnedOrder?.OrderId);
             Assert.AreEqual(orderDto.TotalAmount, returnedOrder?.TotalAmount);
         }
-
 
 
 
@@ -129,39 +110,30 @@ namespace Cart_It_Testing
             {
                 OrderId = 1,
                 CustomerId = 1,
-                ProductId = 999, // Non-existent product ID
+                ProductId = 1, // Non-existent product ID (simulate product not found)
                 ItemQuantity = 2,
                 UnitPrice = 100,
                 ShippingAddress = "123 Test St",
                 OrderDate = DateTime.Now,
-                OrderStatus = "Pending"
+                OrderStatus = "Pending",
             };
 
-            // Mocking the DbSet<Product>
-            var mockProductDbSet = new Mock<DbSet<Product>>();
-            mockProductDbSet.As<IQueryable<Product>>()
-                            .Setup(m => m.Provider)
-                            .Returns(new List<Product>().AsQueryable().Provider);
-            mockProductDbSet.As<IQueryable<Product>>()
-                            .Setup(m => m.Expression)
-                            .Returns(new List<Product>().AsQueryable().Expression);
-            mockProductDbSet.As<IQueryable<Product>>()
-                            .Setup(m => m.ElementType)
-                            .Returns(new List<Product>().AsQueryable().ElementType);
-            mockProductDbSet.As<IQueryable<Product>>()
-                            .Setup(m => m.GetEnumerator())
-                            .Returns(new List<Product>().AsQueryable().GetEnumerator());
-
-            // Setting up the Products property of AppDbContext
-            _dbContextMock.Setup(db => db.Products)
-                          .Returns(mockProductDbSet.Object);
+            // Simulate that the product is not found by setting up the service to throw an exception
+            _orderServiceMock.Setup(service => service.AddOrderAsync(orderDto))
+                .ThrowsAsync(new InvalidOperationException("Product not found"));
 
             // Act
             var result = await _controller.AddOrder(orderDto);
 
             // Assert
-            Assert.IsInstanceOf<BadRequestObjectResult>(result);
+            var badRequestResult = result as BadRequestObjectResult;
+            Assert.IsNotNull(badRequestResult, "Expected BadRequestObjectResult, but got null.");
+
+            // Access the message properly from the dynamic object
+            dynamic value = badRequestResult?.Value;
+            Assert.AreEqual("Product not found", value?.message);
         }
+
 
         [Test]
         public async Task UpdateOrder_ReturnsOk_WhenOrderIsUpdated()

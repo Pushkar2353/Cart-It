@@ -14,16 +14,28 @@ namespace Cart_It.Services
         Task UpdateCustomerPartialAsync(int customerId, CustomerDTO updatedCustomerDto);
         Task DeleteCustomerAsync(int customerId);
         Task<bool> CustomerExistsAsync(int customerId);
+
+        Task<IEnumerable<OrderDTO>> GetCustomerOrdersAsync(int customerId);
+        Task<IEnumerable<PaymentDTO>> GetCustomerPaymentsAsync(int customerId);
+        Task<IEnumerable<ReviewDTO>> GetCustomerReviewsAsync(int customerId);
     }
 
     public class CustomerService : ICustomerService
     {
         private readonly ICustomerRepository _customerRepository;
+        private readonly IOrderRepository _orderRepository;
+        private readonly IPaymentRepository _paymentRepository;
+        private readonly IReviewRepository _reviewRepository;
         private readonly IMapper _mapper;
 
-        public CustomerService(ICustomerRepository customerRepository, IMapper mapper)
+        public CustomerService(ICustomerRepository customerRepository, IOrderRepository orderRepository,
+        IPaymentRepository paymentRepository,
+        IReviewRepository reviewRepository, IMapper mapper)
         {
             _customerRepository = customerRepository;
+            _orderRepository = orderRepository;
+            _paymentRepository = paymentRepository;
+            _reviewRepository = reviewRepository;
             _mapper = mapper;
         }
 
@@ -78,6 +90,21 @@ namespace Cart_It.Services
         public async Task<bool> CustomerExistsAsync(int customerId)
         {
             return await _customerRepository.CustomerExistsAsync(customerId);
+        }
+
+        public async Task<IEnumerable<OrderDTO>> GetCustomerOrdersAsync(int customerId)
+        {
+            return await _orderRepository.GetOrdersByCustomerIdAsync(customerId);
+        }
+
+        public async Task<IEnumerable<PaymentDTO>> GetCustomerPaymentsAsync(int customerId)
+        {
+            return await _paymentRepository.GetPaymentsByCustomerIdAsync(customerId);
+        }
+
+        public async Task<IEnumerable<ReviewDTO>> GetCustomerReviewsAsync(int customerId)
+        {
+            return await _reviewRepository.GetReviewsByCustomerIdAsync(customerId);
         }
     }
 

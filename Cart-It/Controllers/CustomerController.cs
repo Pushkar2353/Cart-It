@@ -174,6 +174,47 @@ namespace Cart_It.Controllers
             }
         }
 
+        [HttpGet("GetCustomerDetails/{customerId}")]
+        public async Task<IActionResult> GetCustomerDetails(int customerId)
+        {
+            try
+            {
+                _logger.LogInformation("Fetching consolidated details for customer with ID {CustomerId}", customerId);
+
+                // Fetch basic customer information
+                var customer = await _customerService.GetCustomerByIdAsync(customerId);
+                if (customer == null)
+                {
+                    _logger.LogWarning("Customer with ID {CustomerId} not found", customerId);
+                    return NotFound(new { Message = $"Customer with ID {customerId} not found." });
+                }
+
+                // Fetch orders, payments, and reviews for the customer
+                var orders = await _customerService.GetCustomerOrdersAsync(customerId);
+                var payments = await _customerService.GetCustomerPaymentsAsync(customerId);
+                var reviews = await _customerService.GetCustomerReviewsAsync(customerId);
+
+                // Combine all data into a consolidated response
+                var consolidatedDetails = new
+                {
+                    Customer = customer,
+                    Orders = orders,
+                    Payments = payments,
+                    Reviews = reviews
+                };
+
+                _logger.LogInformation("Successfully fetched consolidated details for customer with ID {CustomerId}", customerId);
+
+                return Ok(new { Message = "Customer details fetched successfully.", Data = consolidatedDetails });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while fetching consolidated details for customer with ID {CustomerId}", customerId);
+                return StatusCode(500, new { Message = ex.Message });
+            }
+        }
+
+
         /*
 
         [HttpGet("GetAllCategories")]
