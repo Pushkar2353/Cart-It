@@ -78,8 +78,13 @@ const CustomerDashboard = () => {
   return (
     <div className="container mt-4">
       <h2>Welcome, {customerData?.firstName || "Guest"}</h2>
-      <div className="bg-light p-3 rounded mb-4">
-        <p><strong>Email:</strong> {customerData?.email || "Not available"}</p>
+      <div className="bg-light p-3 rounded mb-4 d-flex justify-content-between align-items-center">
+        <div>
+          <p><strong>Email:</strong> {customerData?.email || "Not available"}</p>
+        </div>
+        <button className="btn btn-warning" onClick={() => navigate("/edit-profile")}>
+          Edit Profile
+        </button>
       </div>
 
       {/* Orders Section */}
@@ -162,6 +167,7 @@ const CustomerDashboard = () => {
 };
 
 export default CustomerDashboard;
+
 
 
 

@@ -15,6 +15,8 @@ function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
   const [cartCount, setCartCount] = useState(0);
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -66,6 +68,8 @@ function HomePage() {
 
   const handleCategoryChange = (categoryId) => setSelectedCategory(categoryId);
   const handleSearchChange = (e) => setSearchTerm(e.target.value);
+  const handleMinPriceChange = (e) => setMinPrice(e.target.value);
+  const handleMaxPriceChange = (e) => setMaxPrice(e.target.value);
 
   const handleAddToCart = async (product) => {
     const currentDate = new Date().toISOString();
@@ -98,6 +102,12 @@ function HomePage() {
       alert("Failed to add product to cart. Please try again.");
     }
   };
+
+  const filteredProducts = products.filter((product) => {
+    const matchesSearch = product.productName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesPrice = (!minPrice || product.productPrice >= minPrice) && (!maxPrice || product.productPrice <= maxPrice);
+    return matchesSearch && matchesPrice;
+  });
 
   const sliderSettings = {
     dots: true,
@@ -151,9 +161,7 @@ function HomePage() {
                       Dashboard
                     </button>
                     {user.role === "Customer" && (
-                      <button className="dropdown-item" onClick={() => navigate("/reviews")}>
-                        Reviews
-                      </button>
+                      <button className="dropdown-item" onClick={() => navigate("/review")}>Reviews</button>
                     )}
                   </div>
                 )}
@@ -192,6 +200,24 @@ function HomePage() {
             <Search size={20} /> Search
           </button>
         </div>
+        <div className="d-flex mt-3">
+          <input
+            type="number"
+            className="form-control me-2"
+            placeholder="Min Price"
+            value={minPrice}
+            onChange={handleMinPriceChange}
+            style={{ border: "1px solid #ddd" }}
+          />
+          <input
+            type="number"
+            className="form-control"
+            placeholder="Max Price"
+            value={maxPrice}
+            onChange={handleMaxPriceChange}
+            style={{ border: "1px solid #ddd" }}
+          />
+        </div>
       </div>
 
       <div className="container my-4">
@@ -212,7 +238,7 @@ function HomePage() {
 
       <div className="container">
         <Slider {...sliderSettings}>
-          {products.map((product) => (
+          {filteredProducts.map((product) => (
             <div key={product.productId} className="card mx-2 shadow-sm" style={{ borderRadius: "8px", minWidth: "200px" }}>
               <img
                 src={product.productImageUrl}
