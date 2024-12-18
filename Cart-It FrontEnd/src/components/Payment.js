@@ -9,22 +9,21 @@ const Payment = () => {
   
   // Retrieving data from localStorage
   const customerId = localStorage.getItem("customerId");
-  const orderData = JSON.parse(localStorage.getItem("orderData")) || {}; // Retrieve the order data stored previously
+  const orderData = JSON.parse(localStorage.getItem("orderData")) || {};
   const [paymentData, setPaymentData] = useState({
     paymentId: 0,
-    orderId: 5, // You can update this based on the actual order ID
+    orderId: 5, // Update this based on the actual order ID
     customerId: customerId,
     amountToPay: orderData?.totalAmount || 0,
     paymentMethod: "",
-    paymentStatus: "Pending", // Default payment status
+    paymentStatus: "Pending",
     paymentDate: new Date().toISOString(),
-    productImage: orderData?.productImage || "", // Assuming product image is stored in order data
+    productImage: orderData?.productImage || "",
   });
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    // Retrieve payment data passed from the Checkout page
     if (!orderData || !orderData?.totalAmount) {
       setErrorMessage("Order data is not available.");
     }
@@ -42,7 +41,7 @@ const Payment = () => {
 
         if (response.status === 201) {
           setPaymentStatus("Payment successful.");
-          // Optionally navigate to the order confirmation page or another page
+          // Navigate to order confirmation page
           setTimeout(() => navigate("/orderConfirmation"), 2000);
         } else {
           setPaymentStatus("Payment failed. Please try again.");
@@ -52,6 +51,16 @@ const Payment = () => {
         setPaymentStatus("An error occurred while processing the payment.");
       }
     }
+  };
+
+  const handlePayNow = () => {
+    // Automatically mark payment as successful
+    setPaymentData((prevData) => ({
+      ...prevData,
+      paymentStatus: "Success",
+    }));
+    setPaymentStatus("Payment successful.");
+    handlePayment(); // Trigger payment processing
   };
 
   const handleChange = (e) => {
@@ -78,17 +87,14 @@ const Payment = () => {
         {errorMessage && <p className="text-danger">{errorMessage}</p>}
 
         <div className="payment-details">
-          {/* Product Image */}
           {paymentData.productImage && (
             <div className="product-image">
               <img src={paymentData.productImage} alt="Product" style={{ maxWidth: "200px" }} />
             </div>
           )}
 
-          {/* Amount to Pay */}
           <p>Amount to Pay: ₹{paymentData.amountToPay}</p>
 
-          {/* Payment Method Dropdown */}
           <div className="form-group">
             <label htmlFor="paymentMethod">Payment Method</label>
             <select
@@ -106,29 +112,16 @@ const Payment = () => {
             </select>
           </div>
 
-          {/* Payment Status Dropdown */}
-          <div className="form-group">
-            <label htmlFor="paymentStatus">Payment Status</label>
-            <select
-              id="paymentStatus"
-              name="paymentStatus"
-              className="form-control"
-              value={paymentData.paymentStatus}
-              onChange={handleChange}
-            >
-              <option value="Pending">Pending</option>
-              <option value="Success">Success</option>
-              <option value="Failed">Failed</option>
-            </select>
-          </div>
-
-          {/* Payment Date (auto-generated) */}
-          <p>Payment Date: {new Date(paymentData.paymentDate).toLocaleString()}</p>
-
-          {/* Button to initiate the payment */}
-          <button className="btn btn-primary mt-4" onClick={handlePayment}>
-            Proceed with Payment
+          {/* Pay Now Button */}
+          <button
+            className="btn btn-success mt-4"
+            onClick={handlePayNow}
+            disabled={!paymentData.paymentMethod} // Disable if no payment method selected
+          >
+            Pay Now
           </button>
+
+          <p className="mt-3">Payment Date: {new Date(paymentData.paymentDate).toLocaleString()}</p>
         </div>
 
         {paymentStatus && <p className="mt-4">{paymentStatus}</p>}
@@ -142,5 +135,6 @@ const Payment = () => {
 };
 
 export default Payment;
+
 
 
